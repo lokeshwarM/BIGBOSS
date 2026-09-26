@@ -254,7 +254,9 @@ export default function AdminPage() {
         {activeTab === 'seasons' && (
           <AdminSeasonManager
             shows={adminData.shows}
+            seasons={adminData.seasons}
             onSeasonCreated={loadData}
+            onRefresh={loadData}
           />
         )}
 

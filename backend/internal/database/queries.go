@@ -31,7 +31,7 @@ func GetShows() ([]models.Show, error) {
 	}
 	defer rows.Close()
 
-	var shows []models.Show
+	shows := make([]models.Show, 0)
 	for rows.Next() {
 		var s models.Show
 		if err := rows.Scan(&s.ID, &s.Slug, &s.Name, &s.Language, &s.Broadcaster,
@@ -109,22 +109,25 @@ func GetSeasonsByShow(showID string) ([]models.Season, error) {
 	defer cancel()
 
 	rows, err := DB.QueryContext(ctx, `
-		SELECT id, show_id, season_number, title, COALESCE(tagline,''), year, status,
-		       COALESCE(total_contestants,0), COALESCE(remaining_contestants,0), created_at
-		FROM seasons WHERE show_id = $1
-		ORDER BY season_number DESC
+		SELECT se.id, se.show_id, se.season_number, se.title, COALESCE(se.tagline,''), se.year, se.status,
+		       COALESCE(se.host_name, sh.host_name, ''),
+		       COALESCE(se.total_contestants,0), COALESCE(se.remaining_contestants,0), se.created_at
+		FROM seasons se
+		JOIN shows sh ON sh.id = se.show_id
+		WHERE se.show_id = $1
+		ORDER BY se.season_number DESC
 	`, showID)
 	if err != nil {
 		return nil, fmt.Errorf("GetSeasonsByShow: %w", err)
 	}
 	defer rows.Close()
 
-	var seasons []models.Season
+	seasons := make([]models.Season, 0)
 	for rows.Next() {
 		var s models.Season
 		var showIDStr string
 		if err := rows.Scan(&s.ID, &showIDStr, &s.SeasonNumber, &s.Title, &s.Tagline,
-			&s.Year, &s.Status, &s.TotalContestants, &s.RemainingContestants, &s.CreatedAt); err != nil {
+			&s.Year, &s.Status, &s.HostName, &s.TotalContestants, &s.RemainingContestants, &s.CreatedAt); err != nil {
 			return nil, fmt.Errorf("GetSeasonsByShow scan: %w", err)
 		}
 		s.ShowID = showIDStr
@@ -140,16 +143,38 @@ func GetSeasonBySlugAndNumber(showSlug string, seasonNum int) (*models.Season, e
 	var s models.Season
 	err := DB.QueryRowContext(ctx, `
 		SELECT se.id, se.show_id, sh.slug, se.season_number, se.title, COALESCE(se.tagline,''),
-		       se.year, se.status, COALESCE(se.total_contestants,0),
+		       se.year, se.status, COALESCE(se.host_name, sh.host_name, ''),
+		       COALESCE(se.total_contestants,0),
 		       COALESCE(se.remaining_contestants,0), se.created_at
 		FROM seasons se
 		JOIN shows sh ON sh.id = se.show_id
 		WHERE (sh.slug = $1 OR sh.slug = $2 OR sh.slug = $3) AND se.season_number = $4
 	`, showSlug, "bigg-boss-"+showSlug, strings.TrimPrefix(showSlug, "bigg-boss-"), seasonNum,
 	).Scan(&s.ID, &s.ShowID, &s.ShowSlug, &s.SeasonNumber, &s.Title, &s.Tagline,
-		&s.Year, &s.Status, &s.TotalContestants, &s.RemainingContestants, &s.CreatedAt)
+		&s.Year, &s.Status, &s.HostName, &s.TotalContestants, &s.RemainingContestants, &s.CreatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("GetSeasonBySlugAndNumber: %w", err)
+	}
+	return &s, nil
+}
+
+func GetSeasonByID(id string) (*models.Season, error) {
+	ctx, cancel := Q()
+	defer cancel()
+
+	var s models.Season
+	err := DB.QueryRowContext(ctx, `
+		SELECT se.id, se.show_id, sh.slug, se.season_number, se.title, COALESCE(se.tagline,''),
+		       se.year, se.status, COALESCE(se.host_name, sh.host_name, ''),
+		       COALESCE(se.total_contestants,0),
+		       COALESCE(se.remaining_contestants,0), se.created_at
+		FROM seasons se
+		JOIN shows sh ON sh.id = se.show_id
+		WHERE se.id = $1::uuid
+	`, id).Scan(&s.ID, &s.ShowID, &s.ShowSlug, &s.SeasonNumber, &s.Title, &s.Tagline,
+		&s.Year, &s.Status, &s.HostName, &s.TotalContestants, &s.RemainingContestants, &s.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("GetSeasonByID: %w", err)
 	}
 	return &s, nil
 }
@@ -160,18 +185,74 @@ func CreateSeason(showID string, req models.AdminCreateSeasonRequest) (*models.S
 
 	var s models.Season
 	err := DB.QueryRowContext(ctx, `
-		INSERT INTO seasons (show_id, season_number, title, tagline, year, status)
-		VALUES ($1,$2,$3,$4,$5,$6)
+		INSERT INTO seasons (show_id, season_number, title, tagline, year, status, host_name)
+		VALUES ($1,$2,$3,$4,$5,$6,NULLIF($7, ''))
 		RETURNING id, show_id, season_number, title, COALESCE(tagline,''), year, status,
-		          COALESCE(total_contestants,0), COALESCE(remaining_contestants,0), created_at
-	`, showID, req.SeasonNumber, req.Title, req.Tagline, req.Year, req.Status,
+		          COALESCE(host_name, ''), COALESCE(total_contestants,0), COALESCE(remaining_contestants,0), created_at
+	`, showID, req.SeasonNumber, req.Title, req.Tagline, req.Year, req.Status, req.HostName,
 	).Scan(&s.ID, &s.ShowID, &s.SeasonNumber, &s.Title, &s.Tagline,
-		&s.Year, &s.Status, &s.TotalContestants, &s.RemainingContestants, &s.CreatedAt)
+		&s.Year, &s.Status, &s.HostName, &s.TotalContestants, &s.RemainingContestants, &s.CreatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("CreateSeason: %w", err)
 	}
 	s.ShowSlug = req.ShowSlug
+	if req.HostName != "" {
+		_, _ = DB.ExecContext(ctx, `UPDATE shows SET host_name = $1 WHERE id = $2`, req.HostName, showID)
+	}
 	return &s, nil
+}
+
+func UpdateSeason(id string, req models.AdminUpdateSeasonRequest) (*models.Season, error) {
+	ctx, cancel := Q()
+	defer cancel()
+
+	_, err := DB.ExecContext(ctx, `
+		UPDATE seasons
+		SET title = COALESCE(NULLIF($1, ''), title),
+		    tagline = COALESCE(NULLIF($2, ''), tagline),
+		    year = CASE WHEN $3 > 0 THEN $3 ELSE year END,
+		    status = COALESCE(NULLIF($4, ''), status),
+		    host_name = COALESCE(NULLIF($5, ''), host_name),
+		    season_number = CASE WHEN $6 > 0 THEN $6 ELSE season_number END,
+		    updated_at = NOW()
+		WHERE id = $7::uuid
+	`, req.Title, req.Tagline, req.Year, req.Status, req.HostName, req.SeasonNumber, id)
+	if err != nil {
+		return nil, fmt.Errorf("UpdateSeason: %w", err)
+	}
+
+	if req.HostName != "" {
+		_, _ = DB.ExecContext(ctx, `
+			UPDATE shows SET host_name = $1
+			WHERE id = (SELECT show_id FROM seasons WHERE id = $2::uuid)
+		`, req.HostName, id)
+	}
+
+	return GetSeasonByID(id)
+}
+
+func DeleteSeason(id string) error {
+	ctx, cancel := Q()
+	defer cancel()
+
+	tx, err := DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	_, _ = tx.ExecContext(ctx, `DELETE FROM community_comments WHERE post_id IN (SELECT id FROM community_posts WHERE season_id=$1::uuid)`, id)
+	_, _ = tx.ExecContext(ctx, `DELETE FROM post_reactions WHERE post_id IN (SELECT id FROM community_posts WHERE season_id=$1::uuid)`, id)
+	_, _ = tx.ExecContext(ctx, `DELETE FROM community_posts WHERE season_id=$1::uuid`, id)
+	_, _ = tx.ExecContext(ctx, `DELETE FROM votes WHERE week_id IN (SELECT id FROM nomination_weeks WHERE season_id=$1::uuid)`, id)
+	_, _ = tx.ExecContext(ctx, `DELETE FROM weekly_nominations WHERE week_id IN (SELECT id FROM nomination_weeks WHERE season_id=$1::uuid)`, id)
+	_, _ = tx.ExecContext(ctx, `DELETE FROM chat_messages WHERE week_id IN (SELECT id FROM nomination_weeks WHERE season_id=$1::uuid)`, id)
+	_, _ = tx.ExecContext(ctx, `DELETE FROM nomination_weeks WHERE season_id=$1::uuid`, id)
+	_, _ = tx.ExecContext(ctx, `DELETE FROM contestants WHERE season_id=$1::uuid`, id)
+	_, err = tx.ExecContext(ctx, `DELETE FROM seasons WHERE id=$1::uuid`, id)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("DeleteSeason: %w", err)
+	}
+	return tx.Commit()
 }
 
 // ============================================================
@@ -195,7 +276,7 @@ func GetContestantsBySeason(seasonID string) ([]models.Contestant, error) {
 	}
 	defer rows.Close()
 
-	var list []models.Contestant
+	list := make([]models.Contestant, 0)
 	for rows.Next() {
 		var c models.Contestant
 		if err := rows.Scan(&c.ID, &c.SeasonID, &c.Name, &c.NativeName, &c.Slug,
@@ -247,7 +328,22 @@ func UpdateContestantStatus(id, status string) error {
 }
 
 func DeleteContestant(id string) error {
-	return Exec(`DELETE FROM contestants WHERE id=$1`, id)
+	ctx, cancel := Q()
+	defer cancel()
+
+	tx, err := DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	_, _ = tx.ExecContext(ctx, `UPDATE nomination_weeks SET official_evicted_contestant_id=NULL WHERE official_evicted_contestant_id=$1::uuid`, id)
+	_, _ = tx.ExecContext(ctx, `DELETE FROM weekly_nominations WHERE contestant_id=$1::uuid`, id)
+	_, _ = tx.ExecContext(ctx, `DELETE FROM votes WHERE contestant_id=$1::uuid`, id)
+	_, err = tx.ExecContext(ctx, `DELETE FROM contestants WHERE id=$1::uuid`, id)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("DeleteContestant: %w", err)
+	}
+	return tx.Commit()
 }
 
 func UpdateContestant(c models.Contestant) error {
@@ -308,7 +404,7 @@ func GetAllWeeksBySeason(seasonID string) ([]models.NominationWeek, error) {
 	}
 	defer rows.Close()
 
-	var weeks []models.NominationWeek
+	weeks := make([]models.NominationWeek, 0)
 	for rows.Next() {
 		var w models.NominationWeek
 		if err := rows.Scan(&w.ID, &w.SeasonID, &w.WeekNumber, &w.Title, &w.Description,
@@ -660,7 +756,7 @@ func GetAllWeeks() ([]models.NominationWeek, error) {
 	}
 	defer rows.Close()
 
-	var weeks []models.NominationWeek
+	weeks := make([]models.NominationWeek, 0)
 	for rows.Next() {
 		var w models.NominationWeek
 		var showID string

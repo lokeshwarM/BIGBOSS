@@ -5,11 +5,11 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import Navbar from '../../components/Navbar';
 import DeviceAccountModal from '../../components/DeviceAccountModal';
-import { AuroraGlow, BlurText, PulseGlowBadge } from '../../components/effects';
+import { AuroraGlow, BlurText } from '../../components/effects';
 import { fetchShowBySlug, fetchSeasonsByShow } from '../../lib/api';
 import { getDeviceAccount } from '../../lib/device';
 import { useTheme } from '../../context/ThemeContext';
-import { Play, ArrowRight, Tv, Users, Calendar, Award } from 'lucide-react';
+import { Play, ArrowRight, Calendar, PlusCircle, Sparkles } from 'lucide-react';
 
 const LANGUAGE_POSTERS = {
   telugu: '/images/Telugu.png',
@@ -26,21 +26,30 @@ export default function LanguageShowPage() {
   const [seasons, setSeasons] = useState([]);
   const [deviceAccount, setDeviceAccount] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     setDeviceAccount(getDeviceAccount());
+    setIsLoading(true);
 
     Promise.all([
       fetchShowBySlug(language).catch(() => null),
       fetchSeasonsByShow(language).catch(() => []),
-    ]).then(([showData, seasonsData]) => {
-      setShow(showData);
-      setSeasons(seasonsData || []);
-    });
+    ])
+      .then(([showData, seasonsData]) => {
+        setShow(showData);
+        setSeasons(seasonsData || []);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, [language]);
 
   const ongoingSeason = seasons.find((s) => s.status === 'ongoing') || seasons[0];
-  const billboardImage = LANGUAGE_POSTERS[language?.toLowerCase()] || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=80";
+  const billboardImage =
+    LANGUAGE_POSTERS[language?.toLowerCase()] ||
+    show?.banner_url ||
+    'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=80';
 
   return (
     <div
@@ -91,10 +100,10 @@ export default function LanguageShowPage() {
             </h1>
 
             <p className="text-xs sm:text-sm text-gray-300 drop-shadow">
-              Host: <strong className="text-white">{show?.host_name || 'Host'}</strong> • Network: {show?.broadcaster || 'Star / Colors'}
+              Host: <strong className="text-white">{show?.host_name || 'Bigg Boss'}</strong> • Network: {show?.broadcaster || 'Star / Colors'}
             </p>
 
-            {ongoingSeason && (
+            {ongoingSeason ? (
               <div className="pt-2">
                 <Link
                   href={`/${language}/season${ongoingSeason.season_number}`}
@@ -106,6 +115,19 @@ export default function LanguageShowPage() {
                 >
                   <Play className="w-4 h-4 fill-white" />
                   <span>Enter Season {ongoingSeason.season_number} Voting</span>
+                </Link>
+              </div>
+            ) : (
+              <div className="pt-2 flex items-center space-x-2">
+                <span className="px-3 py-1 rounded-lg bg-black/60 backdrop-blur-md border border-white/20 text-white font-bold text-xs">
+                  ✨ Ready for New Season
+                </span>
+                <Link
+                  href="/admin"
+                  className="px-3 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-white font-bold text-xs flex items-center space-x-1"
+                >
+                  <PlusCircle className="w-3.5 h-3.5" />
+                  <span>Add Season in Admin</span>
                 </Link>
               </div>
             )}
@@ -125,65 +147,107 @@ export default function LanguageShowPage() {
             <span className="text-xs text-gray-500">{seasons.length} Available</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {seasons.map((s) => (
-              <Link
-                key={s.id}
-                href={`/${language}/season${s.season_number}`}
-                className={`group p-4 rounded-2xl border transition-all duration-300 hover:scale-[1.01] block ${
-                  isLight
-                    ? 'bg-white/95 border-[#D0E4F7] hover:border-[#00A8E1] shadow-lg shadow-sky-900/5 hover:shadow-sky-500/15'
-                    : 'bg-[#181818] border-[#2A2A2A] hover:border-[#E50914] hover:shadow-xl hover:shadow-[#E50914]/10'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span
-                    className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${
-                      isLight
-                        ? 'bg-sky-50 text-sky-800 border border-sky-100'
-                        : 'bg-white/10 text-gray-300 group-hover:text-white'
-                    }`}
-                  >
-                    Season {s.season_number}
-                  </span>
-                  <span className="text-[10px] text-emerald-500 font-mono font-bold">
-                    {s.status === 'ongoing' ? '● LIVE ON AIR' : 'ARCHIVED'}
-                  </span>
-                </div>
-
-                <h3
-                  className={`text-sm font-black transition-colors ${
+          {isLoading ? (
+            <div className={`p-8 rounded-2xl border text-center text-xs ${isLight ? 'bg-white border-[#D0E4F7]' : 'bg-[#181818] border-[#2A2A2A]'}`}>
+              Loading seasons...
+            </div>
+          ) : seasons.length === 0 ? (
+            <div
+              className={`p-8 rounded-2xl border text-center space-y-3 transition-all ${
+                isLight
+                  ? 'bg-white/95 border-[#D0E4F7] shadow-md shadow-sky-900/5 text-[#0F172A]'
+                  : 'bg-[#181818] border-[#2A2A2A] text-white'
+              }`}
+            >
+              <Calendar className={`w-8 h-8 mx-auto ${isLight ? 'text-[#0073B1]' : 'text-[#E50914]'}`} />
+              <div>
+                <h3 className="text-sm font-black">No Seasons Added Yet</h3>
+                <p className={`text-xs mt-1 max-w-sm mx-auto ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>
+                  No active seasons are currently configured for {show?.name || `Bigg Boss ${language}`}. Admins can add new seasons and housemates at any time.
+                </p>
+              </div>
+              <div className="pt-1">
+                <Link
+                  href="/admin"
+                  className={`inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md active:scale-95 ${
                     isLight
-                      ? 'text-[#0F172A] group-hover:text-[#00A8E1]'
-                      : 'text-white group-hover:text-[#E50914]'
+                      ? 'bg-gradient-to-r from-[#00A8E1] to-[#0073B1] hover:from-[#0096CC] hover:to-[#005F94]'
+                      : 'bg-[#E50914] hover:bg-[#b81d24]'
                   }`}
                 >
-                  {s.title}
-                </h3>
-                {s.tagline && (
-                  <p className={`text-[11px] italic mt-0.5 ${isLight ? 'text-gray-500' : 'text-gray-400'}`}>
-                    "{s.tagline}"
-                  </p>
-                )}
+                  <PlusCircle className="w-3.5 h-3.5" />
+                  <span>Create Season in Admin</span>
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {seasons.map((s) => (
+                <Link
+                  key={s.id}
+                  href={`/${language}/season${s.season_number}`}
+                  className={`group p-4 rounded-2xl border transition-all duration-300 hover:scale-[1.01] block ${
+                    isLight
+                      ? 'bg-white/95 border-[#D0E4F7] hover:border-[#00A8E1] shadow-lg shadow-sky-900/5 hover:shadow-sky-500/15'
+                      : 'bg-[#181818] border-[#2A2A2A] hover:border-[#E50914] hover:shadow-xl hover:shadow-[#E50914]/10'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span
+                      className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${
+                        isLight
+                          ? 'bg-sky-50 text-sky-800 border border-sky-100'
+                          : 'bg-white/10 text-gray-300 group-hover:text-white'
+                      }`}
+                    >
+                      Season {s.season_number}
+                    </span>
+                    <span className="text-[10px] text-emerald-500 font-mono font-bold">
+                      {s.status === 'ongoing' ? '● LIVE ON AIR' : s.status === 'upcoming' ? 'UPCOMING' : 'ARCHIVED'}
+                    </span>
+                  </div>
 
-                <div
-                  className={`mt-3 pt-2 border-t flex items-center justify-between text-[11px] ${
-                    isLight ? 'border-sky-100 text-gray-500' : 'border-[#2A2A2A] text-gray-400'
-                  }`}
-                >
-                  <span>Year {s.year}</span>
-                  <span
-                    className={`font-bold group-hover:underline flex items-center space-x-1 ${
-                      isLight ? 'text-[#0073B1]' : 'text-[#E50914]'
+                  <h3
+                    className={`text-sm font-black transition-colors ${
+                      isLight
+                        ? 'text-[#0F172A] group-hover:text-[#00A8E1]'
+                        : 'text-white group-hover:text-[#E50914]'
                     }`}
                   >
-                    <span>Vote & Track</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
+                    {s.title}
+                  </h3>
+
+                  {s.host_name && (
+                    <p className={`text-[11px] font-semibold mt-0.5 text-amber-500`}>
+                      🎙️ Host: {s.host_name}
+                    </p>
+                  )}
+
+                  {s.tagline && (
+                    <p className={`text-[11px] italic mt-0.5 ${isLight ? 'text-gray-500' : 'text-gray-400'}`}>
+                      "{s.tagline}"
+                    </p>
+                  )}
+
+                  <div
+                    className={`mt-3 pt-2 border-t flex items-center justify-between text-[11px] ${
+                      isLight ? 'border-sky-100 text-gray-500' : 'border-[#2A2A2A] text-gray-400'
+                    }`}
+                  >
+                    <span>Year {s.year}</span>
+                    <span
+                      className={`font-bold group-hover:underline flex items-center space-x-1 ${
+                        isLight ? 'text-[#0073B1]' : 'text-[#E50914]'
+                      }`}
+                    >
+                      <span>Vote & Track</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </main>
 
@@ -196,4 +260,3 @@ export default function LanguageShowPage() {
     </div>
   );
 }
-

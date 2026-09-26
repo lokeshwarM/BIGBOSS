@@ -30,6 +30,7 @@ type Season struct {
 	Tagline              string          `json:"tagline"`
 	Year                 int             `json:"year"`
 	Status               string          `json:"status"` // 'upcoming', 'ongoing', 'completed'
+	HostName             string          `json:"host_name,omitempty"`
 	TotalContestants     int             `json:"total_contestants"`
 	RemainingContestants int             `json:"remaining_contestants"`
 	Contestants          []Contestant    `json:"contestants,omitempty"`

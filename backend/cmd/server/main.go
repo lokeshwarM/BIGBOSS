@@ -154,6 +154,7 @@ func main() {
 	mux.HandleFunc("/api/admin/data", api.AdminGetAllDataHandler)
 	mux.HandleFunc("/api/admin/shows", api.AdminCreateShowHandler)
 	mux.HandleFunc("/api/admin/seasons", api.AdminCreateSeasonHandler)
+	mux.HandleFunc("/api/admin/seasons/", api.AdminSeasonByIDHandler)
 	mux.HandleFunc("/api/admin/contestants", api.AdminContestantsHandler)
 	mux.HandleFunc("/api/admin/contestants/", api.AdminContestantByIDHandler)
 	mux.HandleFunc("/api/admin/polls", api.AdminPollsHandler)

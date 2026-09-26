@@ -90,7 +90,7 @@ export default function Home() {
               {/* CTA Action Buttons */}
               <div className="flex items-center space-x-3 pt-1">
                 <Link
-                  href="/telugu/season10"
+                  href={`/${shows[0]?.slug || 'telugu'}`}
                   className={`px-4 py-2 sm:px-6 sm:py-2.5 rounded-xl font-extrabold text-xs sm:text-sm flex items-center space-x-2 shadow-xl hover:scale-105 active:scale-95 transition-all ${
                     isLight
                       ? 'bg-gradient-to-r from-[#00A8E1] to-[#0073B1] text-white shadow-sky-500/25'
@@ -98,15 +98,15 @@ export default function Home() {
                   }`}
                 >
                   <Play className="w-4 h-4 fill-current" />
-                  <span>Vote Now</span>
+                  <span>Explore Shows</span>
                 </Link>
 
                 <Link
-                  href="/telugu"
+                  href="/admin"
                   className="px-4 py-2 sm:px-6 sm:py-2.5 rounded-xl bg-white/20 hover:bg-white/30 text-white font-extrabold text-xs sm:text-sm flex items-center space-x-2 backdrop-blur-md border border-white/20 hover:scale-105 active:scale-95 transition-all"
                 >
                   <Info className="w-4 h-4" />
-                  <span>Season Hub</span>
+                  <span>Studio Admin</span>
                 </Link>
               </div>
             </div>
@@ -161,65 +161,65 @@ export default function Home() {
                       imageUrl={posterImg}
                       rank={idx + 1}
                       matchScore={99 - idx * 2}
-                      badgeText={show.is_active ? 'ON AIR' : 'ARCHIVED'}
+                      badgeText={show.is_active ? 'LIVE' : 'ARCHIVED'}
                     />
                   );
                 })
               ) : (
                 <>
                   <NetflixPosterCard
-                    href="/telugu/season10"
+                    href="/telugu"
                     title="Bigg Boss Telugu"
-                    subtitle="Host: Nagarjuna • Season 10"
+                    subtitle="Host: Nagarjuna • Telugu"
                     imageUrl="/images/Telugu.png"
                     rank={1}
                     matchScore={99}
-                    badgeText="LIVE VOTE"
+                    badgeText="SHOW"
                   />
                   <NetflixPosterCard
-                    href="/tamil/season10"
+                    href="/tamil"
                     title="Bigg Boss Tamil"
-                    subtitle="Host: Vijay Sethupathi • Season 10"
+                    subtitle="Host: Vijay Sethupathi • Tamil"
                     imageUrl="/images/Tamil.png"
                     rank={2}
                     matchScore={97}
-                    badgeText="WEEK 3"
+                    badgeText="SHOW"
                   />
                   <NetflixPosterCard
-                    href="/hindi/season20"
+                    href="/hindi"
                     title="Bigg Boss Hindi"
-                    subtitle="Host: Salman Khan • Season 20"
+                    subtitle="Host: Salman Khan • Hindi"
                     imageUrl="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=500&q=80"
                     rank={3}
                     matchScore={96}
-                    badgeText="ON AIR"
+                    badgeText="SHOW"
                   />
                   <NetflixPosterCard
-                    href="/kannada/season13"
+                    href="/kannada"
                     title="Bigg Boss Kannada"
-                    subtitle="Host: Kichcha Sudeep • Season 13"
+                    subtitle="Host: Kichcha Sudeep • Kannada"
                     imageUrl="/images/Kannada.png"
                     rank={4}
                     matchScore={94}
-                    badgeText="ON AIR"
+                    badgeText="SHOW"
                   />
                   <NetflixPosterCard
-                    href="/malayalam/season8"
+                    href="/malayalam"
                     title="Bigg Boss Malayalam"
-                    subtitle="Host: Mohanlal • Season 8"
+                    subtitle="Host: Mohanlal • Malayalam"
                     imageUrl="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=500&q=80"
                     rank={5}
                     matchScore={92}
-                    badgeText="ON AIR"
+                    badgeText="SHOW"
                   />
                   <NetflixPosterCard
-                    href="/marathi/season6"
+                    href="/marathi"
                     title="Bigg Boss Marathi"
-                    subtitle="Host: Riteish Deshmukh • Season 6"
+                    subtitle="Host: Riteish Deshmukh • Marathi"
                     imageUrl="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=500&q=80"
                     rank={6}
                     matchScore={90}
-                    badgeText="COMPLETED"
+                    badgeText="SHOW"
                   />
                 </>
               )}

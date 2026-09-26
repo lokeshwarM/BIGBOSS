@@ -20,6 +20,17 @@ type AdminCreateSeasonRequest struct {
 	Tagline      string `json:"tagline"`
 	Year         int    `json:"year"`
 	Status       string `json:"status"` // 'ongoing', 'completed', 'upcoming'
+	HostName     string `json:"host_name,omitempty"`
+}
+
+// AdminUpdateSeasonRequest
+type AdminUpdateSeasonRequest struct {
+	Title        string `json:"title,omitempty"`
+	Tagline      string `json:"tagline,omitempty"`
+	Year         int    `json:"year,omitempty"`
+	Status       string `json:"status,omitempty"` // 'ongoing', 'completed', 'upcoming'
+	HostName     string `json:"host_name,omitempty"`
+	SeasonNumber int    `json:"season_number,omitempty"`
 }
 
 // AdminCreateContestantRequest

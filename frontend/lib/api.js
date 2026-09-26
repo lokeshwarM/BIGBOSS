@@ -295,7 +295,30 @@ export async function adminCreateSeason(data) {
     headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
-  return res.json();
+  const resData = await res.json();
+  if (!res.ok) throw new Error(resData.error || 'Failed to create season');
+  return resData;
+}
+
+export async function adminUpdateSeason(id, data) {
+  const res = await fetch(`${getApiBase()}/admin/seasons/${id}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  const resData = await res.json();
+  if (!res.ok) throw new Error(resData.error || 'Failed to update season');
+  return resData;
+}
+
+export async function adminDeleteSeason(id) {
+  const res = await fetch(`${getApiBase()}/admin/seasons/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  const resData = await res.json();
+  if (!res.ok) throw new Error(resData.error || 'Failed to delete season');
+  return resData;
 }
 
 export async function adminCreateContestant(data) {
@@ -304,7 +327,20 @@ export async function adminCreateContestant(data) {
     headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
-  return res.json();
+  const resData = await res.json();
+  if (!res.ok) throw new Error(resData.error || 'Failed to create contestant');
+  return resData;
+}
+
+export async function adminUpdateContestant(id, data) {
+  const res = await fetch(`${getApiBase()}/admin/contestants/${id}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  const resData = await res.json();
+  if (!res.ok) throw new Error(resData.error || 'Failed to update contestant');
+  return resData;
 }
 
 export async function adminDeleteContestant(id) {
@@ -312,7 +348,9 @@ export async function adminDeleteContestant(id) {
     method: 'DELETE',
     headers: getAuthHeaders(),
   });
-  return res.json();
+  const resData = await res.json();
+  if (!res.ok) throw new Error(resData.error || 'Failed to delete contestant');
+  return resData;
 }
 
 export async function adminCreatePoll(data) {

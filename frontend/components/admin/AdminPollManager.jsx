@@ -123,6 +123,12 @@ export default function AdminPollManager({ seasons, contestants, polls, onRefres
         </h3>
       </div>
 
+      {(!seasons || seasons.length === 0) && (
+        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold">
+          No seasons available. Create a season in the <strong>Seasons</strong> tab first.
+        </div>
+      )}
+
       {/* Season Selector */}
       <div>
         <label className={`block text-[10px] uppercase font-bold mb-1 ${isLight ? 'text-slate-600' : 'text-gray-400'}`}>
@@ -130,6 +136,7 @@ export default function AdminPollManager({ seasons, contestants, polls, onRefres
         </label>
         <select
           value={activeSeasonId}
+          disabled={!seasons || seasons.length === 0}
           onChange={(e) => {
             setSelectedSeasonId(e.target.value);
             setSelectedNomineeIds([]);
@@ -140,11 +147,15 @@ export default function AdminPollManager({ seasons, contestants, polls, onRefres
               : 'bg-[#121212] border-[#2A2A2A] text-white'
           }`}
         >
-          {seasons?.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.title} ({s.show_slug})
-            </option>
-          ))}
+          {seasons?.length === 0 ? (
+            <option value="">No seasons available</option>
+          ) : (
+            seasons?.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.title} ({s.show_slug})
+              </option>
+            ))
+          )}
         </select>
       </div>
 

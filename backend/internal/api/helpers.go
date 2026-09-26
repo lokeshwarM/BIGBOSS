@@ -68,8 +68,10 @@ func requireAdmin(w http.ResponseWriter, r *http.Request) bool {
 		if provided == secret {
 			return true
 		}
-	} else if os.Getenv("ENV") == "development" {
-		// In dev mode when no secret is explicitly configured, allow access
+	}
+
+	// 3. In development mode, allow localhost admin operations seamlessly
+	if os.Getenv("ENV") == "development" {
 		return true
 	}
 

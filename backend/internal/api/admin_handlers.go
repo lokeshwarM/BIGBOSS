@@ -43,6 +43,44 @@ func AdminCreateSeasonHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, season)
 }
 
+// AdminSeasonByIDHandler handles PUT/PATCH and DELETE /api/admin/seasons/{id}
+func AdminSeasonByIDHandler(w http.ResponseWriter, r *http.Request) {
+	if !requireAdmin(w, r) {
+		return
+	}
+	sID := strings.TrimPrefix(r.URL.Path, "/api/admin/seasons/")
+	sID = strings.Trim(sID, "/")
+	if sID == "" {
+		writeError(w, http.StatusBadRequest, "season id required")
+		return
+	}
+
+	switch r.Method {
+	case http.MethodDelete:
+		if err := service.AdminDeleteSeason(sID); err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"success": true, "deleted": sID})
+
+	case http.MethodPatch, http.MethodPut:
+		var req models.AdminUpdateSeasonRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid json payload")
+			return
+		}
+		updated, err := service.AdminUpdateSeason(sID, req)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, updated)
+
+	default:
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+	}
+}
+
 // ─────────────────────────────────────────────────────────
 // SHOW MANAGEMENT
 // ─────────────────────────────────────────────────────────

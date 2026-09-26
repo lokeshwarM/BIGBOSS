@@ -191,11 +191,54 @@ func AdminCreateSeason(req models.AdminCreateSeasonRequest) (*models.Season, err
 		Tagline:      req.Tagline,
 		Year:         req.Year,
 		Status:       req.Status,
+		HostName:     req.HostName,
 	}
 	mem.mu.Lock()
 	mem.seasons[seasonID] = season
 	mem.mu.Unlock()
 	return season, nil
+}
+
+func AdminUpdateSeason(id string, req models.AdminUpdateSeasonRequest) (*models.Season, error) {
+	if database.IsConnected() {
+		return database.UpdateSeason(id, req)
+	}
+	mem.mu.Lock()
+	defer mem.mu.Unlock()
+	for _, s := range mem.seasons {
+		if s.ID == id {
+			if req.Title != "" {
+				s.Title = req.Title
+			}
+			if req.Tagline != "" {
+				s.Tagline = req.Tagline
+			}
+			if req.Year > 0 {
+				s.Year = req.Year
+			}
+			if req.Status != "" {
+				s.Status = req.Status
+			}
+			if req.HostName != "" {
+				s.HostName = req.HostName
+			}
+			if req.SeasonNumber > 0 {
+				s.SeasonNumber = req.SeasonNumber
+			}
+			return s, nil
+		}
+	}
+	return nil, fmt.Errorf("season not found")
+}
+
+func AdminDeleteSeason(id string) error {
+	if database.IsConnected() {
+		return database.DeleteSeason(id)
+	}
+	mem.mu.Lock()
+	defer mem.mu.Unlock()
+	delete(mem.seasons, id)
+	return nil
 }
 
 // ============================================================
@@ -666,13 +709,6 @@ func defaultShows() []models.Show {
 }
 
 func seedMemoryFallback(s *MemStore) {
-	initialSeasons := []*models.Season{
-		{ID: "telugu-season-10", ShowID: "bb-telugu", ShowSlug: "telugu", SeasonNumber: 10, Title: "Bigg Boss Telugu Season 10", Tagline: "Entertainment Ki Baap", Year: 2026, Status: "ongoing"},
-		{ID: "tamil-season-10", ShowID: "bb-tamil", ShowSlug: "tamil", SeasonNumber: 10, Title: "Bigg Boss Tamil Season 10", Tagline: "Aadalam, Velalam", Year: 2026, Status: "ongoing"},
-		{ID: "hindi-season-20", ShowID: "bb-hindi", ShowSlug: "hindi", SeasonNumber: 20, Title: "Bigg Boss Hindi Season 20", Tagline: "Ek Vardaan, Poora Raaz", Year: 2026, Status: "ongoing"},
-		{ID: "kannada-season-13", ShowID: "bb-kannada", ShowSlug: "kannada", SeasonNumber: 13, Title: "Bigg Boss Kannada Season 13", Tagline: "Gedde Gelthivi", Year: 2026, Status: "ongoing"},
-	}
-	for _, ssn := range initialSeasons {
-		s.seasons[ssn.ID] = ssn
-	}
+	// No mock seasons or contestants are hardcoded
+	// Shows are initialized dynamically
 }

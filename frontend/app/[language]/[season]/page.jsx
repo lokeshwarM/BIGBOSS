@@ -12,6 +12,7 @@ import DeviceAccountModal from '../../../components/DeviceAccountModal';
 import { AuroraGlow, BlurText, PulseGlowBadge } from '../../../components/effects';
 import { fetchSeasonDetail, castVote, fetchPollById } from '../../../lib/api';
 import { getDeviceAccount } from '../../../lib/device';
+import { useTheme } from '../../../context/ThemeContext';
 import { ShieldCheck, AlertCircle, Play } from 'lucide-react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081/api';
@@ -21,6 +22,7 @@ export default function SeasonHubPage() {
   const params = useParams();
   const language = params?.language || 'telugu';
   const seasonParam = params?.season || 'season10';
+  const { isLight } = useTheme();
 
   const [seasonData, setSeasonData] = useState(null);
   const [activePoll, setActivePoll] = useState(null);
@@ -102,18 +104,42 @@ export default function SeasonHubPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#141414] text-white relative selection:bg-[#E50914] selection:text-white">
-      <AuroraGlow primaryColor="#E50914" opacity={0.12} />
+    <div
+      className={`min-h-screen flex flex-col relative transition-colors duration-300 ${
+        isLight
+          ? 'text-[#0F172A] selection:bg-[#00A8E1] selection:text-white'
+          : 'bg-[#141414] text-white selection:bg-[#E50914] selection:text-white'
+      }`}
+    >
+      <AuroraGlow />
       <Navbar deviceAccount={deviceAccount} onOpenAccountModal={() => setIsModalOpen(true)} />
 
       <main className="flex-1 max-w-md w-full mx-auto px-4 py-4 space-y-4 z-10">
         {/* Season Pill Header */}
-        <div className="bg-[#181818] border border-[#2A2A2A] px-3.5 py-2.5 rounded-xl flex items-center justify-between text-xs">
+        <div
+          className={`px-3.5 py-2.5 rounded-xl flex items-center justify-between text-xs border transition-colors ${
+            isLight
+              ? 'bg-white/95 border-[#D0E4F7] shadow-md shadow-sky-900/5'
+              : 'bg-[#181818] border-[#2A2A2A]'
+          }`}
+        >
           <div className="flex items-center space-x-2">
-            <span className="w-2 h-2 rounded-full bg-[#E50914] animate-pulse"></span>
-            <span className="font-black text-white">{seasonData?.title || 'Bigg Boss Season'}</span>
+            <span
+              className={`w-2 h-2 rounded-full animate-pulse ${
+                isLight ? 'bg-[#00A8E1]' : 'bg-[#E50914]'
+              }`}
+            />
+            <span className={`font-black ${isLight ? 'text-[#0F172A]' : 'text-white'}`}>
+              {seasonData?.title || 'Bigg Boss Season'}
+            </span>
           </div>
-          <span className="bg-black/60 border border-[#2A2A2A] px-2 py-0.5 rounded text-[10px] font-mono text-emerald-400 font-bold">
+          <span
+            className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${
+              isLight
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                : 'bg-black/60 border-[#2A2A2A] text-emerald-400'
+            }`}
+          >
             {seasonData?.status === 'ongoing' ? 'ON AIR' : 'ARCHIVED'}
           </span>
         </div>
@@ -132,13 +158,25 @@ export default function SeasonHubPage() {
             voteMessage={voteMessage}
           />
         ) : (
-          <div className="bg-[#181818] border border-[#2A2A2A] rounded-2xl p-6 text-center text-xs text-gray-400">
+          <div
+            className={`rounded-2xl p-6 text-center text-xs border ${
+              isLight
+                ? 'bg-white/95 border-[#D0E4F7] text-gray-600 shadow-md'
+                : 'bg-[#181818] border-[#2A2A2A] text-gray-400'
+            }`}
+          >
             {isLoading ? (
               'Loading season ballot...'
             ) : (
               <div>
-                <AlertCircle className="w-6 h-6 mx-auto mb-2 text-[#E50914]" />
-                <p className="font-bold text-white">No active nomination poll this week yet.</p>
+                <AlertCircle
+                  className={`w-6 h-6 mx-auto mb-2 ${
+                    isLight ? 'text-[#00A8E1]' : 'text-[#E50914]'
+                  }`}
+                />
+                <p className={`font-bold ${isLight ? 'text-[#0F172A]' : 'text-white'}`}>
+                  No active nomination poll this week yet.
+                </p>
                 <p className="text-[10px] text-gray-500 mt-1">
                   Launch the next week poll anytime from the Admin portal.
                 </p>
@@ -158,6 +196,7 @@ export default function SeasonHubPage() {
         )}
 
         {/* Season Contestants Roster */}
+
         <ContestantRoster contestants={contestants} />
 
         {/* Previous Completed Weeks Archive */}

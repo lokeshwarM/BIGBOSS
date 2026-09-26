@@ -9,17 +9,18 @@ import {
   BlurText,
   NetflixPosterCard,
   PulseGlowBadge,
-  ShinyText,
   SpotlightCard,
 } from '../components/effects';
 import { fetchShows } from '../lib/api';
 import { getDeviceAccount } from '../lib/device';
+import { useTheme } from '../context/ThemeContext';
 import { Play, Info, Flame, ShieldCheck, ArrowRight, Sparkles, TrendingUp } from 'lucide-react';
 
 export default function Home() {
   const [shows, setShows] = useState([]);
   const [deviceAccount, setDeviceAccount] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { isLight } = useTheme();
 
   useEffect(() => {
     setDeviceAccount(getDeviceAccount());
@@ -29,15 +30,15 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#141414] text-white relative selection:bg-[#E50914] selection:text-white">
-      {/* Netflix Cinematic Atmospheric Glow */}
-      <AuroraGlow primaryColor="#E50914" secondaryColor="#B81D24" opacity={0.14} />
+    <div className="min-h-screen flex flex-col relative transition-colors duration-300">
+      {/* Dynamic Atmospheric Glow (Netflix Red in Dark, Prime Cyan/Blue in Light) */}
+      <AuroraGlow />
 
       <Navbar deviceAccount={deviceAccount} onOpenAccountModal={() => setIsModalOpen(true)} />
 
       <main className="flex-1 pb-16 z-10">
         {/* =================================================================== */}
-        {/* NETFLIX HERO BILLBOARD                                              */}
+        {/* CINEMATIC HERO BILLBOARD                                            */}
         {/* =================================================================== */}
         <div className="relative w-full max-w-4xl mx-auto px-4 pt-3 pb-8">
           <div className="relative rounded-3xl overflow-hidden aspect-[16/10] sm:aspect-[21/9] border border-[#2A2A2A] shadow-2xl bg-black">
@@ -48,19 +49,31 @@ export default function Home() {
               className="w-full h-full object-cover object-center brightness-75 scale-105"
             />
 
-            {/* Gradient Overlays (Netflix Signature Fade) */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#141414] via-[#141414]/70 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#141414]/90 via-[#141414]/40 to-transparent" />
+            {/* Gradient Overlays (Netflix / Prime Video Style) */}
+            <div
+              className={`absolute inset-0 bg-gradient-to-t ${
+                isLight
+                  ? 'from-[#0B1528]/95 via-[#0B1528]/60 to-transparent'
+                  : 'from-[#141414] via-[#141414]/70 to-transparent'
+              }`}
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/30 to-transparent" />
 
             {/* Billboard Content */}
             <div className="absolute bottom-4 left-4 right-4 sm:bottom-8 sm:left-8 max-w-xl space-y-2 sm:space-y-3">
-              {/* Netflix Top 10 Ribbon */}
+              {/* Badge Tag */}
               <div className="flex items-center space-x-2">
-                <span className="bg-[#E50914] text-white text-[9px] sm:text-[10px] font-black uppercase px-2 py-0.5 rounded shadow tracking-wider">
-                  TOP 10 IN INDIA
+                <span
+                  className={`text-white text-[9px] sm:text-[10px] font-black uppercase px-2 py-0.5 rounded shadow tracking-wider ${
+                    isLight
+                      ? 'bg-gradient-to-r from-[#00A8E1] to-[#0073B1]'
+                      : 'bg-[#E50914]'
+                  }`}
+                >
+                  {isLight ? 'PRIME FEATURED' : 'TOP 10 IN INDIA'}
                 </span>
-                <span className="text-[10px] font-bold text-gray-300 flex items-center space-x-1">
-                  <TrendingUp className="w-3 h-3 text-red-500" />
+                <span className="text-[10px] font-bold text-gray-200 flex items-center space-x-1">
+                  <TrendingUp className={`w-3 h-3 ${isLight ? 'text-sky-400' : 'text-red-500'}`} />
                   <span>#1 Reality Voting Platform</span>
                 </span>
               </div>
@@ -70,7 +83,7 @@ export default function Home() {
                 <BlurText text="Bigg Boss Fan Pulse" delay={40} />
               </h1>
 
-              <p className="text-xs sm:text-sm text-gray-300 line-clamp-2 leading-relaxed drop-shadow">
+              <p className="text-xs sm:text-sm text-gray-200 line-clamp-2 leading-relaxed drop-shadow">
                 Vote daily for your favourite contestant across Telugu, Tamil, Hindi, Kannada, Malayalam, Marathi & Bangla. Free, instant, zero sign-in barrier.
               </p>
 
@@ -78,15 +91,19 @@ export default function Home() {
               <div className="flex items-center space-x-3 pt-1">
                 <Link
                   href="/telugu/season10"
-                  className="px-4 py-2 sm:px-6 sm:py-2.5 rounded-lg bg-white hover:bg-gray-200 text-black font-extrabold text-xs sm:text-sm flex items-center space-x-2 shadow-xl hover:scale-105 active:scale-95 transition-all"
+                  className={`px-4 py-2 sm:px-6 sm:py-2.5 rounded-xl font-extrabold text-xs sm:text-sm flex items-center space-x-2 shadow-xl hover:scale-105 active:scale-95 transition-all ${
+                    isLight
+                      ? 'bg-gradient-to-r from-[#00A8E1] to-[#0073B1] text-white shadow-sky-500/25'
+                      : 'bg-white hover:bg-gray-200 text-black'
+                  }`}
                 >
-                  <Play className="w-4 h-4 fill-black" />
+                  <Play className="w-4 h-4 fill-current" />
                   <span>Vote Now</span>
                 </Link>
 
                 <Link
                   href="/telugu"
-                  className="px-4 py-2 sm:px-6 sm:py-2.5 rounded-lg bg-white/20 hover:bg-white/30 text-white font-extrabold text-xs sm:text-sm flex items-center space-x-2 backdrop-blur-md border border-white/20 hover:scale-105 active:scale-95 transition-all"
+                  className="px-4 py-2 sm:px-6 sm:py-2.5 rounded-xl bg-white/20 hover:bg-white/30 text-white font-extrabold text-xs sm:text-sm flex items-center space-x-2 backdrop-blur-md border border-white/20 hover:scale-105 active:scale-95 transition-all"
                 >
                   <Info className="w-4 h-4" />
                   <span>Season Hub</span>
@@ -97,19 +114,27 @@ export default function Home() {
         </div>
 
         {/* =================================================================== */}
-        {/* NETFLIX HORIZONTAL SHELVES / ROWS                                   */}
+        {/* HORIZONTAL SHELVES / ROWS                                           */}
         {/* =================================================================== */}
         <div className="max-w-4xl mx-auto px-4 space-y-7">
           {/* Row 1: On-Air Seasons */}
           <section className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <h2 className="text-sm sm:text-base font-extrabold text-white tracking-wide">
+                <h2
+                  className={`text-sm sm:text-base font-extrabold tracking-wide ${
+                    isLight ? 'text-[#0F172A]' : 'text-white'
+                  }`}
+                >
                   🔥 Trending On-Air Shows
                 </h2>
                 <span className="text-[10px] text-gray-500 font-bold">Updated Daily</span>
               </div>
-              <span className="text-[11px] text-[#E50914] font-bold cursor-pointer hover:underline">
+              <span
+                className={`text-[11px] font-bold cursor-pointer hover:underline ${
+                  isLight ? 'text-[#0073B1]' : 'text-[#E50914]'
+                }`}
+              >
                 Explore all →
               </span>
             </div>
@@ -175,37 +200,59 @@ export default function Home() {
 
           {/* Row 2: Spotlight Feature Cards */}
           <section className="space-y-3">
-            <h2 className="text-sm sm:text-base font-extrabold text-white tracking-wide">
+            <h2
+              className={`text-sm sm:text-base font-extrabold tracking-wide ${
+                isLight ? 'text-[#0F172A]' : 'text-white'
+              }`}
+            >
               ⚡ How HousePulse Works
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <SpotlightCard className="p-4 space-y-2">
-                <div className="w-8 h-8 rounded-lg bg-[#E50914]/20 border border-[#E50914]/40 flex items-center justify-center text-[#E50914]">
+                <div
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                    isLight
+                      ? 'bg-sky-100 text-[#0073B1] border border-sky-200'
+                      : 'bg-[#E50914]/20 border border-[#E50914]/40 text-[#E50914]'
+                  }`}
+                >
                   <Flame className="w-4 h-4" />
                 </div>
-                <h3 className="font-extrabold text-xs text-white">1 Vote Per Day / Device</h3>
-                <p className="text-[11px] text-gray-400 leading-relaxed">
+                <h3 className="font-extrabold text-xs">1 Vote Per Day / Device</h3>
+                <p className="text-[11px] opacity-75 leading-relaxed">
                   No sign-in walls. Vote once daily for your favourite contestant from this device.
                 </p>
               </SpotlightCard>
 
               <SpotlightCard className="p-4 space-y-2">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+                <div
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                    isLight
+                      ? 'bg-sky-100 text-[#00A8E1] border border-sky-200'
+                      : 'bg-amber-500/20 border border-amber-500/40 text-amber-400'
+                  }`}
+                >
                   <Sparkles className="w-4 h-4" />
                 </div>
-                <h3 className="font-extrabold text-xs text-white">Live Real-time Standings</h3>
-                <p className="text-[11px] text-gray-400 leading-relaxed">
+                <h3 className="font-extrabold text-xs">Live Real-time Standings</h3>
+                <p className="text-[11px] opacity-75 leading-relaxed">
                   Percentage bars unlock the second your vote lands, with instant WebSockets stream.
                 </p>
               </SpotlightCard>
 
               <SpotlightCard className="p-4 space-y-2">
-                <div className="w-8 h-8 rounded-lg bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400">
+                <div
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                    isLight
+                      ? 'bg-sky-100 text-blue-600 border border-sky-200'
+                      : 'bg-blue-500/20 border border-blue-500/40 text-blue-400'
+                  }`}
+                >
                   <ShieldCheck className="w-4 h-4" />
                 </div>
-                <h3 className="font-extrabold text-xs text-white">Full Season Archives</h3>
-                <p className="text-[11px] text-gray-400 leading-relaxed">
+                <h3 className="font-extrabold text-xs">Full Season Archives</h3>
+                <p className="text-[11px] opacity-75 leading-relaxed">
                   Track every completed week, final fan standings, and official TV eviction outcomes.
                 </p>
               </SpotlightCard>
@@ -216,18 +263,34 @@ export default function Home() {
           <section className="pt-2">
             <Link
               href="/admin"
-              className="block bg-gradient-to-r from-[#181818] via-[#202020] to-[#181818] border border-[#2A2A2A] hover:border-[#E50914] p-4 rounded-2xl transition-all group"
+              className={`block p-4 rounded-2xl border transition-all group ${
+                isLight
+                  ? 'bg-white/80 hover:bg-white border-[#D0E4F7] hover:border-[#00A8E1] shadow-lg shadow-sky-900/5'
+                  : 'bg-gradient-to-r from-[#181818] via-[#202020] to-[#181818] border-[#2A2A2A] hover:border-[#E50914]'
+              }`}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-bold text-white group-hover:text-[#E50914] transition-colors block">
+                  <span
+                    className={`text-xs font-bold transition-colors block ${
+                      isLight
+                        ? 'text-[#0F172A] group-hover:text-[#00A8E1]'
+                        : 'text-white group-hover:text-[#E50914]'
+                    }`}
+                  >
                     Manage Contestants & Weekly Polls
                   </span>
-                  <span className="text-[10px] text-gray-400 block mt-0.5">
+                  <span className="text-[10px] text-gray-500 block mt-0.5">
                     Launch new Monday-to-Friday nomination polls or declare evicted housemates.
                   </span>
                 </div>
-                <div className="px-3 py-1.5 rounded-lg bg-[#E50914] text-white text-[11px] font-black group-hover:scale-105 transition-transform flex items-center space-x-1">
+                <div
+                  className={`px-3 py-1.5 rounded-lg text-white text-[11px] font-black group-hover:scale-105 transition-transform flex items-center space-x-1 ${
+                    isLight
+                      ? 'bg-gradient-to-r from-[#00A8E1] to-[#0073B1] shadow-md shadow-sky-500/20'
+                      : 'bg-[#E50914]'
+                  }`}
+                >
                   <span>Admin</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </div>
@@ -236,13 +299,15 @@ export default function Home() {
           </section>
         </div>
 
-        {/* Netflix Style Minimalist Footer */}
-        <footer className="max-w-4xl mx-auto px-4 mt-12 pt-6 border-t border-[#222222] text-center text-gray-500 space-y-2 text-[10px]">
+        {/* Footer */}
+        <footer className="max-w-4xl mx-auto px-4 mt-12 pt-6 border-t border-[#D0E4F7]/40 dark:border-[#222222] text-center text-gray-500 space-y-2 text-[10px]">
           <p>Questions? Unofficial Reality TV Fan Intelligence Platform</p>
           <p className="max-w-md mx-auto leading-relaxed">
             HousePulse is not affiliated with or endorsed by Viacom18, Banijay, Star Maa, Asianet, or JioCinema. All trademarks and celebrity images belong to their respective copyright holders.
           </p>
-          <p className="font-mono text-gray-600">© 2026 HousePulse • Netflix-Inspired Mobile UI</p>
+          <p className="font-mono text-gray-400">
+            {isLight ? 'Amazon Prime Video Gradient Light Edition' : 'Netflix Cinema Edition'}
+          </p>
         </footer>
       </main>
 

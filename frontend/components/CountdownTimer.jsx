@@ -3,8 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, ShieldAlert } from 'lucide-react';
 import { PulseGlowBadge } from './effects';
+import { useTheme } from '../context/ThemeContext';
 
 export default function CountdownTimer({ endsAt }) {
+  const { isLight } = useTheme();
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
     hours: 0,
@@ -38,7 +40,7 @@ export default function CountdownTimer({ endsAt }) {
 
   if (timeLeft.isClosed) {
     return (
-      <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 flex items-center justify-center space-x-2 text-red-400">
+      <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 flex items-center justify-center space-x-2 text-red-500">
         <ShieldAlert className="w-4 h-4" />
         <span className="text-xs font-bold uppercase tracking-wider">Voting Closed For This Week</span>
       </div>
@@ -46,41 +48,113 @@ export default function CountdownTimer({ endsAt }) {
   }
 
   return (
-    <div className="bg-[#181818] border border-[#2A2A2A] rounded-2xl p-3.5 shadow-xl">
+    <div
+      className={`rounded-2xl p-3.5 border transition-all ${
+        isLight
+          ? 'bg-gradient-to-b from-white via-white to-[#F0F7FF] border-[#CDE5FA] shadow-md shadow-sky-900/5'
+          : 'bg-[#181818] border-[#2A2A2A] shadow-xl'
+      }`}
+    >
       <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center space-x-1.5 text-[#E50914]">
+        <div
+          className={`flex items-center space-x-1.5 ${
+            isLight ? 'text-[#0073B1]' : 'text-[#E50914]'
+          }`}
+        >
           <Clock className="w-4 h-4" />
           <span className="text-[11px] font-black uppercase tracking-wider">Poll Closes Friday Night</span>
         </div>
-        <span className="text-[10px] text-gray-400">TV Broadcast Synced</span>
+        <span className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>
+          TV Broadcast Synced
+        </span>
       </div>
 
       <div className="grid grid-cols-4 gap-2 text-center">
-        <div className="bg-black rounded-xl py-2 px-1 border border-[#2A2A2A]">
-          <span className="block text-lg font-black text-white leading-none font-mono">
+        <div
+          className={`rounded-xl py-2 px-1 border transition-colors ${
+            isLight ? 'bg-[#EBF5FE] border-[#CDE5FA]' : 'bg-black border-[#2A2A2A]'
+          }`}
+        >
+          <span
+            className={`block text-lg font-black leading-none font-mono ${
+              isLight ? 'text-[#0F172A]' : 'text-white'
+            }`}
+          >
             {String(timeLeft.days).padStart(2, '0')}
           </span>
-          <span className="text-[9px] uppercase font-bold text-gray-500 tracking-wider">Days</span>
+          <span
+            className={`text-[9px] uppercase font-bold tracking-wider ${
+              isLight ? 'text-sky-800/70' : 'text-gray-500'
+            }`}
+          >
+            Days
+          </span>
         </div>
-        <div className="bg-black rounded-xl py-2 px-1 border border-[#2A2A2A]">
-          <span className="block text-lg font-black text-white leading-none font-mono">
+
+        <div
+          className={`rounded-xl py-2 px-1 border transition-colors ${
+            isLight ? 'bg-[#EBF5FE] border-[#CDE5FA]' : 'bg-black border-[#2A2A2A]'
+          }`}
+        >
+          <span
+            className={`block text-lg font-black leading-none font-mono ${
+              isLight ? 'text-[#0F172A]' : 'text-white'
+            }`}
+          >
             {String(timeLeft.hours).padStart(2, '0')}
           </span>
-          <span className="text-[9px] uppercase font-bold text-gray-500 tracking-wider">Hours</span>
+          <span
+            className={`text-[9px] uppercase font-bold tracking-wider ${
+              isLight ? 'text-sky-800/70' : 'text-gray-500'
+            }`}
+          >
+            Hours
+          </span>
         </div>
-        <div className="bg-black rounded-xl py-2 px-1 border border-[#2A2A2A]">
-          <span className="block text-lg font-black text-white leading-none font-mono">
+
+        <div
+          className={`rounded-xl py-2 px-1 border transition-colors ${
+            isLight ? 'bg-[#EBF5FE] border-[#CDE5FA]' : 'bg-black border-[#2A2A2A]'
+          }`}
+        >
+          <span
+            className={`block text-lg font-black leading-none font-mono ${
+              isLight ? 'text-[#0F172A]' : 'text-white'
+            }`}
+          >
             {String(timeLeft.minutes).padStart(2, '0')}
           </span>
-          <span className="text-[9px] uppercase font-bold text-gray-500 tracking-wider">Mins</span>
+          <span
+            className={`text-[9px] uppercase font-bold tracking-wider ${
+              isLight ? 'text-sky-800/70' : 'text-gray-500'
+            }`}
+          >
+            Mins
+          </span>
         </div>
-        <div className="bg-black rounded-xl py-2 px-1 border border-[#2A2A2A]">
-          <span className="block text-lg font-black text-[#E50914] leading-none font-mono">
+
+        <div
+          className={`rounded-xl py-2 px-1 border transition-colors ${
+            isLight ? 'bg-[#EBF5FE] border-[#CDE5FA]' : 'bg-black border-[#2A2A2A]'
+          }`}
+        >
+          <span
+            className={`block text-lg font-black leading-none font-mono ${
+              isLight ? 'text-[#00A8E1]' : 'text-[#E50914]'
+            }`}
+          >
             {String(timeLeft.seconds).padStart(2, '0')}
           </span>
-          <span className="text-[9px] uppercase font-bold text-gray-500 tracking-wider">Secs</span>
+          <span
+            className={`text-[9px] uppercase font-bold tracking-wider ${
+              isLight ? 'text-sky-800/70' : 'text-gray-500'
+            }`}
+          >
+            Secs
+          </span>
         </div>
       </div>
     </div>
   );
 }
+

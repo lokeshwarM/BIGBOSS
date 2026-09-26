@@ -1,4 +1,5 @@
 import './globals.css';
+import { ThemeProvider } from '../context/ThemeContext';
 
 export const viewport = {
   width: 'device-width',
@@ -31,9 +32,11 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body className="bg-[#0B0F19] text-gray-100 min-h-screen antialiased flex flex-col selection:bg-amber-500 selection:text-black">
-        {children}
+    <html lang="en" className="dark">
+      <body className="min-h-screen antialiased flex flex-col transition-colors duration-300">
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

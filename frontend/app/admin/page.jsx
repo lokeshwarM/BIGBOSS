@@ -8,9 +8,11 @@ import AdminPollManager from '../../components/admin/AdminPollManager';
 import { AuroraGlow } from '../../components/effects';
 import { fetchAdminData } from '../../lib/api';
 import { getDeviceAccount } from '../../lib/device';
+import { useTheme } from '../../context/ThemeContext';
 import { Settings, Users, Vote, Calendar, RefreshCw } from 'lucide-react';
 
 export default function AdminPage() {
+  const { isLight } = useTheme();
   const [activeTab, setActiveTab] = useState('contestants');
   const [adminData, setAdminData] = useState({ shows: [], seasons: [], contestants: [], polls: [] });
   const [deviceAccount, setDeviceAccount] = useState(null);
@@ -34,25 +36,55 @@ export default function AdminPage() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#141414] text-white relative selection:bg-[#E50914] selection:text-white">
-      <AuroraGlow primaryColor="#E50914" opacity={0.12} />
+    <div
+      className={`min-h-screen flex flex-col relative transition-colors duration-300 ${
+        isLight
+          ? 'text-[#0F172A] selection:bg-[#00A8E1] selection:text-white'
+          : 'bg-[#141414] text-white selection:bg-[#E50914] selection:text-white'
+      }`}
+    >
+      <AuroraGlow />
       <Navbar deviceAccount={deviceAccount} onOpenAccountModal={() => {}} />
 
       <main className="flex-1 max-w-md w-full mx-auto px-4 py-4 space-y-4 z-10">
         {/* Admin Header */}
-        <div className="bg-[#181818] border border-[#2A2A2A] rounded-2xl p-4 flex items-center justify-between shadow-xl">
+        <div
+          className={`rounded-2xl p-4 flex items-center justify-between border transition-all ${
+            isLight
+              ? 'bg-gradient-to-r from-white via-white to-[#F0F7FF] border-[#CDE5FA] shadow-md shadow-sky-900/5'
+              : 'bg-[#181818] border-[#2A2A2A] shadow-xl'
+          }`}
+        >
           <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#E50914]/20 border border-[#E50914]/40 flex items-center justify-center text-[#E50914]">
+            <div
+              className={`w-8 h-8 rounded-xl flex items-center justify-center border transition-colors ${
+                isLight
+                  ? 'bg-sky-50 border-[#CDE5FA] text-[#0073B1]'
+                  : 'bg-[#E50914]/20 border-[#E50914]/40 text-[#E50914]'
+              }`}
+            >
               <Settings className="w-4 h-4" />
             </div>
             <div>
-              <h1 className="text-sm font-black text-white uppercase tracking-wider">HousePulse Studio</h1>
-              <p className="text-[10px] text-gray-400">Add Contestants & Control Live Polls</p>
+              <h1
+                className={`text-sm font-black uppercase tracking-wider ${
+                  isLight ? 'text-[#0F172A]' : 'text-white'
+                }`}
+              >
+                HousePulse Studio
+              </h1>
+              <p className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>
+                Add Contestants & Control Live Polls
+              </p>
             </div>
           </div>
           <button
             onClick={loadData}
-            className="p-2 rounded-xl bg-black border border-[#2A2A2A] text-gray-300 hover:text-white transition-all active:scale-95"
+            className={`p-2 rounded-xl border transition-all active:scale-95 ${
+              isLight
+                ? 'bg-white border-[#CDE5FA] text-slate-700 hover:text-[#0073B1] hover:border-[#00A8E1] shadow-sm'
+                : 'bg-black border-[#2A2A2A] text-gray-300 hover:text-white'
+            }`}
             title="Refresh Data"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
@@ -60,11 +92,21 @@ export default function AdminPage() {
         </div>
 
         {/* Tab Buttons */}
-        <div className="grid grid-cols-3 gap-1 bg-[#181818] p-1 rounded-xl border border-[#2A2A2A]">
+        <div
+          className={`grid grid-cols-3 gap-1 p-1 rounded-xl border transition-colors ${
+            isLight ? 'bg-[#E2F0FD] border-[#CDE5FA]' : 'bg-[#181818] border-[#2A2A2A]'
+          }`}
+        >
           <button
             onClick={() => setActiveTab('contestants')}
             className={`py-2 rounded-lg text-xs font-bold flex items-center justify-center space-x-1 transition-all ${
-              activeTab === 'contestants' ? 'bg-[#E50914] text-white shadow-md' : 'text-gray-400 hover:text-white'
+              activeTab === 'contestants'
+                ? isLight
+                  ? 'bg-gradient-to-r from-[#00A8E1] to-[#0073B1] text-white shadow-md shadow-sky-500/20'
+                  : 'bg-[#E50914] text-white shadow-md'
+                : isLight
+                ? 'text-slate-600 hover:text-slate-900'
+                : 'text-gray-400 hover:text-white'
             }`}
           >
             <Users className="w-3.5 h-3.5" />
@@ -73,7 +115,13 @@ export default function AdminPage() {
           <button
             onClick={() => setActiveTab('polls')}
             className={`py-2 rounded-lg text-xs font-bold flex items-center justify-center space-x-1 transition-all ${
-              activeTab === 'polls' ? 'bg-[#E50914] text-white shadow-md' : 'text-gray-400 hover:text-white'
+              activeTab === 'polls'
+                ? isLight
+                  ? 'bg-gradient-to-r from-[#00A8E1] to-[#0073B1] text-white shadow-md shadow-sky-500/20'
+                  : 'bg-[#E50914] text-white shadow-md'
+                : isLight
+                ? 'text-slate-600 hover:text-slate-900'
+                : 'text-gray-400 hover:text-white'
             }`}
           >
             <Vote className="w-3.5 h-3.5" />
@@ -82,7 +130,13 @@ export default function AdminPage() {
           <button
             onClick={() => setActiveTab('seasons')}
             className={`py-2 rounded-lg text-xs font-bold flex items-center justify-center space-x-1 transition-all ${
-              activeTab === 'seasons' ? 'bg-[#E50914] text-white shadow-md' : 'text-gray-400 hover:text-white'
+              activeTab === 'seasons'
+                ? isLight
+                  ? 'bg-gradient-to-r from-[#00A8E1] to-[#0073B1] text-white shadow-md shadow-sky-500/20'
+                  : 'bg-[#E50914] text-white shadow-md'
+                : isLight
+                ? 'text-slate-600 hover:text-slate-900'
+                : 'text-gray-400 hover:text-white'
             }`}
           >
             <Calendar className="w-3.5 h-3.5" />
@@ -118,3 +172,4 @@ export default function AdminPage() {
     </div>
   );
 }
+

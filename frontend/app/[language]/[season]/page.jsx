@@ -9,9 +9,10 @@ import LiveDiscussion from '../../../components/LiveDiscussion';
 import ContestantRoster from '../../../components/ContestantRoster';
 import ArchiveSection from '../../../components/ArchiveSection';
 import DeviceAccountModal from '../../../components/DeviceAccountModal';
+import { AuroraGlow, BlurText, PulseGlowBadge } from '../../../components/effects';
 import { fetchSeasonDetail, castVote, fetchPollById } from '../../../lib/api';
 import { getDeviceAccount } from '../../../lib/device';
-import { ShieldCheck, Tv, AlertCircle } from 'lucide-react';
+import { ShieldCheck, AlertCircle, Play } from 'lucide-react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081/api';
 const WS_BASE = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8081/ws';
@@ -33,12 +34,10 @@ export default function SeasonHubPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load device account
   useEffect(() => {
     setDeviceAccount(getDeviceAccount());
   }, []);
 
-  // Fetch season data
   const loadSeason = async () => {
     try {
       const data = await fetchSeasonDetail(language, seasonParam);
@@ -65,7 +64,6 @@ export default function SeasonHubPage() {
     }
   }, [language, seasonParam, deviceAccount?.deviceId]);
 
-  // Handle 1-tap voting
   const handleVote = async (contestantId) => {
     if (!activePoll || !deviceAccount?.deviceId || isVoting) return;
 
@@ -104,18 +102,19 @@ export default function SeasonHubPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0B0F19]">
+    <div className="min-h-screen flex flex-col bg-[#141414] text-white relative selection:bg-[#E50914] selection:text-white">
+      <AuroraGlow primaryColor="#E50914" opacity={0.12} />
       <Navbar deviceAccount={deviceAccount} onOpenAccountModal={() => setIsModalOpen(true)} />
 
-      <main className="flex-1 max-w-md w-full mx-auto px-4 py-4 space-y-4">
-        {/* Season Header Info */}
-        <div className="bg-[#131B2E] border border-[#1E293B] px-3.5 py-2 rounded-xl flex items-center justify-between text-[11px] text-gray-300">
-          <span className="flex items-center space-x-1.5">
-            <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-            <span className="font-extrabold text-white">{seasonData?.title || 'Bigg Boss Season'}</span>
-          </span>
-          <span className="font-mono text-gray-400">
-            {seasonData?.status === 'ongoing' ? '🟢 ON AIR' : 'COMPLETED'}
+      <main className="flex-1 max-w-md w-full mx-auto px-4 py-4 space-y-4 z-10">
+        {/* Season Pill Header */}
+        <div className="bg-[#181818] border border-[#2A2A2A] px-3.5 py-2.5 rounded-xl flex items-center justify-between text-xs">
+          <div className="flex items-center space-x-2">
+            <span className="w-2 h-2 rounded-full bg-[#E50914] animate-pulse"></span>
+            <span className="font-black text-white">{seasonData?.title || 'Bigg Boss Season'}</span>
+          </div>
+          <span className="bg-black/60 border border-[#2A2A2A] px-2 py-0.5 rounded text-[10px] font-mono text-emerald-400 font-bold">
+            {seasonData?.status === 'ongoing' ? 'ON AIR' : 'ARCHIVED'}
           </span>
         </div>
 
@@ -133,14 +132,16 @@ export default function SeasonHubPage() {
             voteMessage={voteMessage}
           />
         ) : (
-          <div className="bg-[#131B2E] border border-[#1E293B] rounded-2xl p-6 text-center text-xs text-gray-400">
+          <div className="bg-[#181818] border border-[#2A2A2A] rounded-2xl p-6 text-center text-xs text-gray-400">
             {isLoading ? (
               'Loading season ballot...'
             ) : (
               <div>
-                <AlertCircle className="w-6 h-6 mx-auto mb-2 text-gray-500" />
-                <p>No active voting poll for this week yet.</p>
-                <p className="text-[10px] text-gray-500 mt-1">Admin can launch this week's nomination poll anytime from the admin portal.</p>
+                <AlertCircle className="w-6 h-6 mx-auto mb-2 text-[#E50914]" />
+                <p className="font-bold text-white">No active nomination poll this week yet.</p>
+                <p className="text-[10px] text-gray-500 mt-1">
+                  Launch the next week poll anytime from the Admin portal.
+                </p>
               </div>
             )}
           </div>
@@ -163,15 +164,15 @@ export default function SeasonHubPage() {
         <ArchiveSection archiveWeeks={archiveWeeks} />
 
         {/* Footer Disclaimer */}
-        <footer className="text-center pt-4 pb-8 space-y-2 text-[10px] text-gray-400 border-t border-[#1E293B]/70">
+        <footer className="text-center pt-4 pb-8 space-y-2 text-[10px] text-gray-500 border-t border-[#222222]">
           <div className="flex items-center justify-center space-x-1.5 text-gray-400">
-            <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
-            <span className="font-bold text-gray-300">Independent Fan Poll</span>
+            <ShieldCheck className="w-3.5 h-3.5 text-[#E50914]" />
+            <span className="font-bold text-gray-300">Independent Fan Community Poll</span>
           </div>
           <p className="leading-relaxed px-4">
-            HousePulse is an independent fan platform. Unofficial fan sentiment poll. Votes cast here do not influence the official TV broadcaster eviction.
+            HousePulse is an independent fan platform. Unofficial audience sentiment poll. Votes cast here do not decide the official broadcaster eviction.
           </p>
-          <p className="text-gray-400 font-mono text-[9px]">
+          <p className="font-mono text-gray-600 text-[9px]">
             © 2026 HousePulse • 1 Vote per Day per Device
           </p>
         </footer>

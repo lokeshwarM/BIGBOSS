@@ -5,6 +5,7 @@ import Navbar from '../../components/Navbar';
 import AdminSeasonManager from '../../components/admin/AdminSeasonManager';
 import AdminContestantManager from '../../components/admin/AdminContestantManager';
 import AdminPollManager from '../../components/admin/AdminPollManager';
+import { AuroraGlow } from '../../components/effects';
 import { fetchAdminData } from '../../lib/api';
 import { getDeviceAccount } from '../../lib/device';
 import { Settings, Users, Vote, Calendar, RefreshCw } from 'lucide-react';
@@ -33,24 +34,25 @@ export default function AdminPage() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0B0F19]">
+    <div className="min-h-screen flex flex-col bg-[#141414] text-white relative selection:bg-[#E50914] selection:text-white">
+      <AuroraGlow primaryColor="#E50914" opacity={0.12} />
       <Navbar deviceAccount={deviceAccount} onOpenAccountModal={() => {}} />
 
-      <main className="flex-1 max-w-md w-full mx-auto px-4 py-4 space-y-4">
+      <main className="flex-1 max-w-md w-full mx-auto px-4 py-4 space-y-4 z-10">
         {/* Admin Header */}
-        <div className="bg-[#131B2E] border border-[#1E293B] rounded-2xl p-4 flex items-center justify-between">
+        <div className="bg-[#181818] border border-[#2A2A2A] rounded-2xl p-4 flex items-center justify-between shadow-xl">
           <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+            <div className="w-8 h-8 rounded-xl bg-[#E50914]/20 border border-[#E50914]/40 flex items-center justify-center text-[#E50914]">
               <Settings className="w-4 h-4" />
             </div>
             <div>
-              <h1 className="text-sm font-black text-white uppercase tracking-wider">HousePulse Admin</h1>
+              <h1 className="text-sm font-black text-white uppercase tracking-wider">HousePulse Studio</h1>
               <p className="text-[10px] text-gray-400">Add Contestants & Control Live Polls</p>
             </div>
           </div>
           <button
             onClick={loadData}
-            className="p-2 rounded-xl bg-[#0B0F19] border border-[#1E293B] text-gray-300 hover:text-white transition-all active:scale-95"
+            className="p-2 rounded-xl bg-black border border-[#2A2A2A] text-gray-300 hover:text-white transition-all active:scale-95"
             title="Refresh Data"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
@@ -58,11 +60,11 @@ export default function AdminPage() {
         </div>
 
         {/* Tab Buttons */}
-        <div className="grid grid-cols-3 gap-1 bg-[#131B2E] p-1 rounded-xl border border-[#1E293B]">
+        <div className="grid grid-cols-3 gap-1 bg-[#181818] p-1 rounded-xl border border-[#2A2A2A]">
           <button
             onClick={() => setActiveTab('contestants')}
             className={`py-2 rounded-lg text-xs font-bold flex items-center justify-center space-x-1 transition-all ${
-              activeTab === 'contestants' ? 'bg-amber-500 text-black shadow-md' : 'text-gray-400 hover:text-white'
+              activeTab === 'contestants' ? 'bg-[#E50914] text-white shadow-md' : 'text-gray-400 hover:text-white'
             }`}
           >
             <Users className="w-3.5 h-3.5" />
@@ -71,7 +73,7 @@ export default function AdminPage() {
           <button
             onClick={() => setActiveTab('polls')}
             className={`py-2 rounded-lg text-xs font-bold flex items-center justify-center space-x-1 transition-all ${
-              activeTab === 'polls' ? 'bg-amber-500 text-black shadow-md' : 'text-gray-400 hover:text-white'
+              activeTab === 'polls' ? 'bg-[#E50914] text-white shadow-md' : 'text-gray-400 hover:text-white'
             }`}
           >
             <Vote className="w-3.5 h-3.5" />
@@ -80,7 +82,7 @@ export default function AdminPage() {
           <button
             onClick={() => setActiveTab('seasons')}
             className={`py-2 rounded-lg text-xs font-bold flex items-center justify-center space-x-1 transition-all ${
-              activeTab === 'seasons' ? 'bg-amber-500 text-black shadow-md' : 'text-gray-400 hover:text-white'
+              activeTab === 'seasons' ? 'bg-[#E50914] text-white shadow-md' : 'text-gray-400 hover:text-white'
             }`}
           >
             <Calendar className="w-3.5 h-3.5" />

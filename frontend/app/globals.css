@@ -3,8 +3,11 @@
 @tailwind utilities;
 
 :root {
-  --background: #0B0F19;
-  --foreground: #F8FAFC;
+  --background: #141414;
+  --foreground: #FFFFFF;
+  --netflix-red: #E50914;
+  --netflix-dark-red: #B81D24;
+  --card-bg: #181818;
 }
 
 body {
@@ -16,35 +19,29 @@ body {
   overflow-x: hidden;
 }
 
-/* Custom scrollbars */
+/* Netflix style hidden scrollbar for horizontal poster carousels */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Custom scrollbars for chat */
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #0B0F19;
+  background: #141414;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1E293B;
-  border-radius: 4px;
+  background: #2A2A2A;
+  border-radius: 6px;
 }
-
-/* Pulsing live dot */
-@keyframes pulseGlow {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
-  }
-  50% {
-    opacity: 0.6;
-    transform: scale(1.15);
-    box-shadow: 0 0 18px rgba(239, 68, 68, 1);
-  }
-}
-
-.animate-pulse-glow {
-  animation: pulseGlow 1.8s infinite;
+::-webkit-scrollbar-thumb:hover {
+  background: #E50914;
 }
 
 /* Shimmer animation */
@@ -61,6 +58,6 @@ body {
   content: '';
   position: absolute;
   top: 0; right: 0; bottom: 0; left: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
   animation: shimmer 2s infinite;
 }

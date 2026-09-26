@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CheckCircle2, Share2, Sparkles, AlertCircle, Heart } from 'lucide-react';
+import { CheckCircle2, Share2, Sparkles, Heart, Play } from 'lucide-react';
+import { SpotlightCard, CountUp, ShinyText } from './effects';
 
 export default function VotingBallot({
   poll,
@@ -18,7 +19,7 @@ export default function VotingBallot({
 
   const handleShare = (contestantName) => {
     const text = encodeURIComponent(
-      `🔥 I just cast my fan vote for ${contestantName} on HousePulse! Support your favourite Bigg Boss contestant here: ${window.location.href}`
+      `🔥 I just voted for ${contestantName} on HousePulse! Support your favourite housemate before eviction: ${window.location.href}`
     );
     window.open(`https://wa.me/?text=${text}`, '_blank');
   };
@@ -26,22 +27,22 @@ export default function VotingBallot({
   return (
     <div className="space-y-4">
       {/* Title & Info Banner */}
-      <div className="bg-gradient-to-r from-amber-500/10 via-purple-500/5 to-transparent border border-amber-500/20 rounded-2xl p-4">
-        <div className="flex items-center space-x-2 text-amber-400 text-xs font-bold uppercase tracking-wider mb-1">
+      <SpotlightCard className="p-4 border-[#2A2A2A]">
+        <div className="flex items-center space-x-2 text-[#E50914] text-xs font-black uppercase tracking-wider mb-1">
           <Sparkles className="w-3.5 h-3.5" />
           <span>Nomination Week {poll?.week_number} Ballot</span>
         </div>
-        <h2 className="text-base font-extrabold text-white leading-snug">{poll?.title}</h2>
+        <h2 className="text-base font-black text-white leading-snug">{poll?.title}</h2>
         <p className="text-xs text-gray-400 mt-1 leading-relaxed">{poll?.description}</p>
 
         {/* Live Daily Status Pill */}
-        <div className="mt-3 flex items-center justify-between text-[11px] pt-2 border-t border-[#1E293B]">
-          <span className="text-gray-400">Total Fan Votes Cast:</span>
-          <span className="font-bold text-amber-400 font-mono text-xs">
-            {totalVotes.toLocaleString()} votes
+        <div className="mt-3 flex items-center justify-between text-[11px] pt-2 border-t border-[#2A2A2A]">
+          <span className="text-gray-400">Total Fan Votes:</span>
+          <span className="font-extrabold text-[#E50914] font-mono text-xs">
+            <CountUp to={totalVotes} duration={0.8} /> votes
           </span>
         </div>
-      </div>
+      </SpotlightCard>
 
       {/* Daily Vote Status Banner */}
       {hasVotedToday && (
@@ -50,7 +51,7 @@ export default function VotingBallot({
           <div className="text-xs">
             <p className="font-bold">Daily Vote Counted!</p>
             <p className="text-gray-300 text-[11px] mt-0.5">
-              Live standings unlocked below. You can return tomorrow to cast another daily vote.
+              Live standings unlocked below. Return tomorrow to cast your next daily vote.
             </p>
           </div>
         </div>
@@ -60,23 +61,20 @@ export default function VotingBallot({
       <div className="space-y-3">
         {nominees.map((nominee, index) => {
           const isVotedForThis = votedForId === nominee.id;
-          const isSelected = selectedContestantId === nominee.id;
           const voteShare = nominee.vote_share || 0;
 
           return (
             <div
               key={nominee.id}
-              className={`relative overflow-hidden rounded-2xl border transition-all duration-200 ${
+              className={`relative overflow-hidden rounded-2xl border transition-all duration-300 ${
                 isVotedForThis
-                  ? 'bg-[#18233C] border-emerald-500/60 shadow-lg shadow-emerald-500/10'
-                  : isSelected
-                  ? 'bg-[#18233C] border-amber-500 shadow-lg shadow-amber-500/15'
-                  : 'bg-[#131B2E] border-[#1E293B] hover:border-gray-700'
+                  ? 'bg-[#1E1E1E] border-[#E50914] shadow-lg shadow-[#E50914]/20'
+                  : 'bg-[#181818] border-[#2A2A2A] hover:border-gray-500'
               }`}
             >
               <div className="p-3.5 flex items-center space-x-3.5">
                 {/* Contestant Photo */}
-                <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 border border-[#1E293B] bg-[#0B0F19]">
+                <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 border border-[#2A2A2A] bg-black">
                   <img
                     src={nominee.photo_url}
                     alt={nominee.name}
@@ -84,7 +82,7 @@ export default function VotingBallot({
                     loading="lazy"
                   />
                   {isVotedForThis && (
-                    <div className="absolute inset-0 bg-emerald-500/30 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-[#E50914]/30 flex items-center justify-center">
                       <CheckCircle2 className="w-6 h-6 text-white drop-shadow-md" />
                     </div>
                   )}
@@ -93,9 +91,9 @@ export default function VotingBallot({
                 {/* Details */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center space-x-1.5">
-                    <span className="font-bold text-sm text-white truncate">{nominee.name}</span>
+                    <span className="font-extrabold text-sm text-white truncate">{nominee.name}</span>
                     {nominee.native_name && (
-                      <span className="text-[10px] text-gray-400 bg-[#0B0F19] px-1.5 py-0.5 rounded border border-[#1E293B]">
+                      <span className="text-[10px] text-gray-400 bg-black/60 px-1.5 py-0.5 rounded border border-[#2A2A2A]">
                         {nominee.native_name}
                       </span>
                     )}
@@ -106,19 +104,19 @@ export default function VotingBallot({
                   {hasVotedToday ? (
                     <div className="mt-2 space-y-1">
                       <div className="flex justify-between items-center text-[11px]">
-                        <span className="font-semibold text-gray-300">
+                        <span className="font-bold text-gray-300">
                           {nominee.vote_count?.toLocaleString()} votes
                         </span>
-                        <span className="font-bold text-amber-400 font-mono">
+                        <span className="font-black text-[#E50914] font-mono text-xs">
                           {voteShare.toFixed(1)}%
                         </span>
                       </div>
-                      <div className="w-full bg-[#0B0F19] h-2.5 rounded-full overflow-hidden border border-[#1E293B]">
+                      <div className="w-full bg-black h-2.5 rounded-full overflow-hidden border border-[#2A2A2A]">
                         <div
                           className={`h-full rounded-full transition-all duration-700 ${
                             index === 0
-                              ? 'bg-gradient-to-r from-amber-500 to-yellow-300'
-                              : 'bg-gradient-to-r from-pink-500 to-purple-400'
+                              ? 'bg-gradient-to-r from-[#E50914] to-red-400'
+                              : 'bg-gradient-to-r from-amber-500 to-yellow-300'
                           }`}
                           style={{ width: `${Math.max(voteShare, 2)}%` }}
                         />
@@ -128,10 +126,10 @@ export default function VotingBallot({
                     <button
                       onClick={() => onVote(nominee.id)}
                       disabled={isVoting}
-                      className="mt-2.5 w-full py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-[0.98] text-black font-extrabold text-xs flex items-center justify-center space-x-1.5 shadow-md shadow-amber-500/20 transition-all"
+                      className="mt-2.5 w-full py-2 px-3 rounded-xl bg-[#E50914] hover:bg-[#b81d24] active:scale-[0.98] text-white font-black text-xs flex items-center justify-center space-x-1.5 shadow-md shadow-[#E50914]/25 transition-all"
                     >
-                      <Heart className="w-3.5 h-3.5 fill-black" />
-                      <span>{isVoting ? 'Submitting...' : 'Save ' + nominee.name.split(' ')[0]}</span>
+                      <Heart className="w-3.5 h-3.5 fill-white" />
+                      <span>{isVoting ? 'Saving...' : 'Vote ' + nominee.name.split(' ')[0]}</span>
                     </button>
                   )}
                 </div>
@@ -139,8 +137,8 @@ export default function VotingBallot({
 
               {/* Share CTA if voted for this candidate */}
               {hasVotedToday && isVotedForThis && (
-                <div className="bg-[#0B0F19]/80 px-3.5 py-2 border-t border-[#1E293B] flex items-center justify-between">
-                  <span className="text-[11px] font-medium text-emerald-400 flex items-center space-x-1">
+                <div className="bg-black/60 px-3.5 py-2 border-t border-[#2A2A2A] flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-emerald-400 flex items-center space-x-1">
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     <span>Your vote today</span>
                   </span>

@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -12,10 +13,11 @@ import (
 type Store struct {
 	mu           sync.RWMutex
 	shows        []models.Show
-	seasons      map[string]*models.Season // key: showSlug
+	seasons      map[string]*models.Season       // key: seasonID
+	contestants  map[string]*models.Contestant   // key: contestantID
 	weeks        map[string]*models.NominationWeek // key: weekID
-	votes        map[string]time.Time // key: weekID:deviceID:YYYY-MM-DD
-	deviceVotes  map[string]string // key: weekID:deviceID:YYYY-MM-DD -> contestantID
+	votes        map[string]time.Time            // key: weekID:deviceID:YYYY-MM-DD
+	deviceVotes  map[string]string               // key: weekID:deviceID:YYYY-MM-DD -> contestantID
 	chatMessages map[string][]models.ChatMessage // key: weekID -> messages
 	devices      map[string]*models.DeviceAccount
 }
@@ -25,6 +27,7 @@ var GlobalStore *Store
 func InitStore() {
 	s := &Store{
 		seasons:      make(map[string]*models.Season),
+		contestants:  make(map[string]*models.Contestant),
 		weeks:        make(map[string]*models.NominationWeek),
 		votes:        make(map[string]time.Time),
 		deviceVotes:  make(map[string]string),
@@ -32,22 +35,22 @@ func InitStore() {
 		devices:      make(map[string]*models.DeviceAccount),
 	}
 
-	// Seed Shows
+	// 1. Initial Regional Shows (Permanent canonical language shells)
 	s.shows = []models.Show{
 		{
-			ID:           "bb-hindi",
-			Slug:         "bigg-boss-hindi",
-			Name:         "Bigg Boss Hindi",
-			Language:     "Hindi",
-			Broadcaster:  "Colors TV & JioCinema",
-			HostName:     "Salman Khan",
-			AccentColor:  "#F59E0B",
+			ID:           "bb-telugu",
+			Slug:         "telugu",
+			Name:         "Bigg Boss Telugu",
+			Language:     "Telugu",
+			Broadcaster:  "Star Maa & Disney+ Hotstar",
+			HostName:     "Nagarjuna",
+			AccentColor:  "#3B82F6",
 			IsActive:     true,
 			DisplayOrder: 1,
 		},
 		{
 			ID:           "bb-tamil",
-			Slug:         "bigg-boss-tamil",
+			Slug:         "tamil",
 			Name:         "Bigg Boss Tamil",
 			Language:     "Tamil",
 			Broadcaster:  "Vijay TV & Disney+ Hotstar",
@@ -57,19 +60,19 @@ func InitStore() {
 			DisplayOrder: 2,
 		},
 		{
-			ID:           "bb-telugu",
-			Slug:         "bigg-boss-telugu",
-			Name:         "Bigg Boss Telugu",
-			Language:     "Telugu",
-			Broadcaster:  "Star Maa & Disney+ Hotstar",
-			HostName:     "Nagarjuna",
-			AccentColor:  "#3B82F6",
+			ID:           "bb-hindi",
+			Slug:         "hindi",
+			Name:         "Bigg Boss Hindi",
+			Language:     "Hindi",
+			Broadcaster:  "Colors TV & JioCinema",
+			HostName:     "Salman Khan",
+			AccentColor:  "#F59E0B",
 			IsActive:     true,
 			DisplayOrder: 3,
 		},
 		{
 			ID:           "bb-kannada",
-			Slug:         "bigg-boss-kannada",
+			Slug:         "kannada",
 			Name:         "Bigg Boss Kannada",
 			Language:     "Kannada",
 			Broadcaster:  "Colors Kannada & JioCinema",
@@ -80,7 +83,7 @@ func InitStore() {
 		},
 		{
 			ID:           "bb-malayalam",
-			Slug:         "bigg-boss-malayalam",
+			Slug:         "malayalam",
 			Name:         "Bigg Boss Malayalam",
 			Language:     "Malayalam",
 			Broadcaster:  "Asianet & Disney+ Hotstar",
@@ -91,7 +94,7 @@ func InitStore() {
 		},
 		{
 			ID:           "bb-marathi",
-			Slug:         "bigg-boss-marathi",
+			Slug:         "marathi",
 			Name:         "Bigg Boss Marathi",
 			Language:     "Marathi",
 			Broadcaster:  "Colors Marathi & JioCinema",
@@ -102,7 +105,7 @@ func InitStore() {
 		},
 		{
 			ID:           "bb-bangla",
-			Slug:         "bigg-boss-bangla",
+			Slug:         "bangla",
 			Name:         "Bigg Boss Bangla",
 			Language:     "Bengali",
 			Broadcaster:  "Colors Bangla & JioCinema",
@@ -113,195 +116,68 @@ func InitStore() {
 		},
 	}
 
-	// Calculate Monday Night to Friday Night window
-	now := time.Now()
-	// Week 3 active
-	hindiWeek3 := &models.NominationWeek{
-		ID:                        "bb-hindi-s20-w3",
-		SeasonID:                  "bb-hindi-s20",
-		WeekNumber:                3,
-		Title:                     "Week 3 Eviction Poll: Save Yung DSA or Isha Rikhi",
-		Description:               "Reverse nominations: Housemates chose whom to save, leaving Yung DSA & Isha Rikhi facing eviction.",
-		StartsAt:                  now.Add(-48 * time.Hour),
-		EndsAt:                    now.Add(48 * time.Hour),
-		IsActive:                  true,
-		IsClosed:                  false,
-		OfficialEvictionAnnounced: false,
-		TotalVotes:                14280,
-		Nominees: []models.Contestant{
-			{
-				ID:               "c-yung-dsa",
-				SeasonID:         "bb-hindi-s20",
-				Name:             "Harsh Vijay Machare (Yung DSA)",
-				NativeName:       "हर्ष विजय मचारे (यंग डीएसए)",
-				Slug:             "harsh-vijay-machare-yung-dsa",
-				PhotoURL:         "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
-				Bio:              "Pune Yerawada hip-hop artist known for Yeda Yung.",
-				Occupation:       "Rapper, Songwriter",
-				Status:           "in_house",
-				VoteCount:        8920,
-				VoteShare:        62.4,
-				NominationsCount: 1,
-			},
-			{
-				ID:               "c-isha-rikhi",
-				SeasonID:         "bb-hindi-s20",
-				Name:             "Isha Rikhi",
-				NativeName:       "ईशा रिखी",
-				Slug:             "isha-rikhi",
-				PhotoURL:         "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80",
-				Bio:              "Punjabi film actress and renowned fashion model.",
-				Occupation:       "Actress, Model",
-				Status:           "in_house",
-				VoteCount:        5360,
-				VoteShare:        37.6,
-				NominationsCount: 1,
-			},
-		},
-		Show: &s.shows[0],
-	}
-
-	// Tamil Season 10 Week 3 Active
-	tamilWeek3 := &models.NominationWeek{
-		ID:                        "bb-tamil-s10-w3",
-		SeasonID:                  "bb-tamil-s10",
-		WeekNumber:                3,
-		Title:                     "Week 3 Eviction Poll: Bigg Boss Tamil Season 10",
-		Description:               "8 housemates are in danger of eviction this week. Cast your fan vote before Friday midnight!",
-		StartsAt:                  now.Add(-48 * time.Hour),
-		EndsAt:                    now.Add(48 * time.Hour),
-		IsActive:                  true,
-		IsClosed:                  false,
-		OfficialEvictionAnnounced: false,
-		TotalVotes:                18420,
-		Nominees: []models.Contestant{
-			{
-				ID:               "c-tamil-1",
-				SeasonID:         "bb-tamil-s10",
-				Name:             "Santhosh Prathap",
-				NativeName:       "சந்தோஷ் பிரதாப்",
-				Slug:             "santhosh-prathap",
-				PhotoURL:         "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
-				Bio:              "Tamil cinema actor known for Sarpatta Parambarai.",
-				Occupation:       "Actor",
-				Status:           "in_house",
-				VoteCount:        6820,
-				VoteShare:        37.0,
-			},
-			{
-				ID:               "c-tamil-2",
-				SeasonID:         "bb-tamil-s10",
-				Name:             "Pavithra Lakshmi",
-				NativeName:       "பவித்ரா லட்சுமி",
-				Slug:             "pavithra-lakshmi",
-				PhotoURL:         "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80",
-				Bio:              "Cooku with Comali fame and film actress.",
-				Occupation:       "Actress, Model",
-				Status:           "in_house",
-				VoteCount:        6110,
-				VoteShare:        33.2,
-			},
-			{
-				ID:               "c-tamil-3",
-				SeasonID:         "bb-tamil-s10",
-				Name:             "Gopinath Ravi",
-				NativeName:       "கோபிநாத் ரவி",
-				Slug:             "gopinath-ravi",
-				PhotoURL:         "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80",
-				Bio:              "Fitness model and Rubaru Mr India winner.",
-				Occupation:       "Model, Actor",
-				Status:           "in_house",
-				VoteCount:        5490,
-				VoteShare:        29.8,
-			},
-		},
-		Show: &s.shows[1],
-	}
-
-	// Telugu Season 10 Week 3 Active
-	teluguWeek3 := &models.NominationWeek{
-		ID:                        "bb-telugu-s10-w3",
-		SeasonID:                  "bb-telugu-s10",
-		WeekNumber:                3,
-		Title:                     "Week 3 Eviction Poll: Bigg Boss Telugu Season 10",
-		Description:               "Save your favourite Telugu housemate before the weekend eviction with Nagarjuna.",
-		StartsAt:                  now.Add(-48 * time.Hour),
-		EndsAt:                    now.Add(48 * time.Hour),
-		IsActive:                  true,
-		IsClosed:                  false,
-		OfficialEvictionAnnounced: false,
-		TotalVotes:                11340,
-		Nominees: []models.Contestant{
-			{
-				ID:               "c-telugu-1",
-				SeasonID:         "bb-telugu-s10",
-				Name:             "Aman Masood",
-				NativeName:       "అమన్ మసూద్",
-				Slug:             "aman-masood",
-				PhotoURL:         "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=400&q=80",
-				Bio:              "Tollywood actor and serial star.",
-				Occupation:       "Actor",
-				Status:           "in_house",
-				VoteCount:        6420,
-				VoteShare:        56.6,
-			},
-			{
-				ID:               "c-telugu-2",
-				SeasonID:         "bb-telugu-s10",
-				Name:             "Damera Shalini",
-				NativeName:       "దామెర శాలిని పటేల్",
-				Slug:             "damera-shalini",
-				PhotoURL:         "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80",
-				Bio:              "Digital content creator and lifestyle vlogger.",
-				Occupation:       "Digital Creator",
-				Status:           "in_house",
-				VoteCount:        4920,
-				VoteShare:        43.4,
-			},
-		},
-		Show: &s.shows[2],
-	}
-
-	s.weeks[hindiWeek3.ID] = hindiWeek3
-	s.weeks[tamilWeek3.ID] = tamilWeek3
-	s.weeks[teluguWeek3.ID] = teluguWeek3
-
-	// Add sample chats
-	s.chatMessages[hindiWeek3.ID] = []models.ChatMessage{
+	// 2. Initial Canonical Seasons for each language
+	initialSeasons := []*models.Season{
 		{
-			ID:          "m1",
-			WeekID:      hindiWeek3.ID,
-			DeviceID:    "admin",
-			Nickname:    "PulseMod",
-			AvatarColor: "#EF4444",
-			Content:     "🔥 Live Week 3 discussion is open! Vote daily once per device until Friday night.",
-			IsPinned:    true,
-			CreatedAt:   now.Add(-24 * time.Hour),
+			ID:           "telugu-season-10",
+			ShowID:       "bb-telugu",
+			ShowSlug:     "telugu",
+			SeasonNumber: 10,
+			Title:        "Bigg Boss Telugu Season 10",
+			Tagline:      "Entertainment Ki Baap",
+			Year:         2026,
+			Status:       "ongoing",
 		},
 		{
-			ID:          "m2",
-			WeekID:      hindiWeek3.ID,
-			DeviceID:    "fan-1",
-			Nickname:    "YungArmy",
-			AvatarColor: "#F59E0B",
-			Content:     "Just voted for Yung DSA! Straight out of Yerawada, he needs to stay!",
-			CreatedAt:   now.Add(-3 * time.Hour),
+			ID:           "tamil-season-10",
+			ShowID:       "bb-tamil",
+			ShowSlug:     "tamil",
+			SeasonNumber: 10,
+			Title:        "Bigg Boss Tamil Season 10",
+			Tagline:      "Aadalam, Velalam",
+			Year:         2026,
+			Status:       "ongoing",
 		},
 		{
-			ID:          "m3",
-			WeekID:      hindiWeek3.ID,
-			DeviceID:    "fan-2",
-			Nickname:    "DesiViewer",
-			AvatarColor: "#3B82F6",
-			Content:     "Isha didn't get involved in petty fights. Real maturity. Voted for her today.",
-			CreatedAt:   now.Add(-45 * time.Minute),
+			ID:           "hindi-season-20",
+			ShowID:       "bb-hindi",
+			ShowSlug:     "hindi",
+			SeasonNumber: 20,
+			Title:        "Bigg Boss Hindi Season 20",
+			Tagline:      "Ek Vardaan, Poora Raaz",
+			Year:         2026,
+			Status:       "ongoing",
 		},
+		{
+			ID:           "kannada-season-13",
+			ShowID:       "bb-kannada",
+			ShowSlug:     "kannada",
+			SeasonNumber: 13,
+			Title:        "Bigg Boss Kannada Season 13",
+			Tagline:      "Gedde Gelthivi",
+			Year:         2026,
+			Status:       "ongoing",
+		},
+	}
+
+	for _, ssn := range initialSeasons {
+		s.seasons[ssn.ID] = ssn
 	}
 
 	GlobalStore = s
 }
 
-// GetShows returns all available Bigg Boss shows
+// NormalizeSlug trims dashes and numbers e.g. "season10" -> "season-10" or checks numeric
+func normalizeSeasonNumber(param string) int {
+	param = strings.ToLower(param)
+	param = strings.TrimPrefix(param, "season-")
+	param = strings.TrimPrefix(param, "season")
+	var num int
+	fmt.Sscanf(param, "%d", &num)
+	return num
+}
+
+// GetShows returns all available regional shows
 func (s *Store) GetShows() []models.Show {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -312,25 +188,65 @@ func (s *Store) GetShows() []models.Show {
 func (s *Store) GetShowBySlug(slug string) (*models.Show, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+	slug = strings.ToLower(slug)
 	for _, show := range s.shows {
-		if show.Slug == slug {
+		if show.Slug == slug || strings.TrimPrefix(show.Slug, "bigg-boss-") == slug {
 			return &show, nil
 		}
 	}
 	return nil, errors.New("show not found")
 }
 
-// GetActivePolls returns all active nomination polls across languages
-func (s *Store) GetActivePolls() []*models.NominationWeek {
+// GetSeasonsByShow returns all seasons for a given show slug
+func (s *Store) GetSeasonsByShow(showSlug string) []models.Season {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	var active []*models.NominationWeek
-	for _, w := range s.weeks {
-		if w.IsActive {
-			active = append(active, w)
+	showSlug = strings.ToLower(showSlug)
+	var result []models.Season
+	for _, season := range s.seasons {
+		if season.ShowSlug == showSlug {
+			result = append(result, *season)
 		}
 	}
-	return active
+	return result
+}
+
+// GetSeasonByNumber returns a specific season e.g. telugu, 10
+func (s *Store) GetSeasonByNumber(showSlug string, seasonNum int) (*models.Season, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	showSlug = strings.ToLower(showSlug)
+	for _, season := range s.seasons {
+		if season.ShowSlug == showSlug && season.SeasonNumber == seasonNum {
+			return season, nil
+		}
+	}
+	return nil, errors.New("season not found")
+}
+
+// GetContestantsBySeason retrieves all contestants registered in a season
+func (s *Store) GetContestantsBySeason(seasonID string) []models.Contestant {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var list []models.Contestant
+	for _, c := range s.contestants {
+		if c.SeasonID == seasonID {
+			list = append(list, *c)
+		}
+	}
+	return list
+}
+
+// GetActivePollBySeason returns current active nomination week for a season
+func (s *Store) GetActivePollBySeason(seasonID string) *models.NominationWeek {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, w := range s.weeks {
+		if w.SeasonID == seasonID && w.IsActive && !w.IsClosed {
+			return w
+		}
+	}
+	return nil
 }
 
 // GetWeekByID returns a specific week with standings
@@ -344,15 +260,17 @@ func (s *Store) GetWeekByID(weekID string) (*models.NominationWeek, error) {
 	return w, nil
 }
 
-// HasVotedToday checks if device has already voted today
-func (s *Store) HasVotedToday(weekID, deviceID string) (bool, string) {
+// GetArchiveBySeason returns closed previous weeks for a season
+func (s *Store) GetArchiveBySeason(seasonID string) []models.NominationWeek {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	today := time.Now().Format("2006-01-02")
-	key := fmt.Sprintf("%s:%s:%s", weekID, deviceID, today)
-	_, voted := s.votes[key]
-	votedFor := s.deviceVotes[key]
-	return voted, votedFor
+	var list []models.NominationWeek
+	for _, w := range s.weeks {
+		if w.SeasonID == seasonID && (w.IsClosed || !w.IsActive) {
+			list = append(list, *w)
+		}
+	}
+	return list
 }
 
 // CastVote records 1 vote per day per device
@@ -418,14 +336,24 @@ func (s *Store) CastVote(req models.VoteRequest) (*models.VoteResponse, error) {
 	}, nil
 }
 
-// GetChatMessages retrieves live comments for a week
+// HasVotedToday checks if device has already voted today
+func (s *Store) HasVotedToday(weekID, deviceID string) (bool, string) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	today := time.Now().Format("2006-01-02")
+	key := fmt.Sprintf("%s:%s:%s", weekID, deviceID, today)
+	_, voted := s.votes[key]
+	votedFor := s.deviceVotes[key]
+	return voted, votedFor
+}
+
+// Chat methods
 func (s *Store) GetChatMessages(weekID string) []models.ChatMessage {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.chatMessages[weekID]
 }
 
-// AddChatMessage posts a new comment
 func (s *Store) AddChatMessage(req models.ChatRequest) (*models.ChatMessage, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -457,92 +385,168 @@ func (s *Store) AddChatMessage(req models.ChatRequest) (*models.ChatMessage, err
 	return &msg, nil
 }
 
-// GetWeekArchive returns completed previous weeks with eviction results
-func (s *Store) GetWeekArchive(showSlug string) []models.NominationWeek {
+// ===================================================================
+// ADMIN OPERATIONS (DYNAMIC ADDITION OF SEASONS, CONTESTANTS & POLLS)
+// ===================================================================
+
+func (s *Store) AdminCreateSeason(req models.AdminCreateSeasonRequest) (*models.Season, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	showSlug := strings.ToLower(req.ShowSlug)
+	seasonID := fmt.Sprintf("%s-season-%d", showSlug, req.SeasonNumber)
+
+	season := &models.Season{
+		ID:           seasonID,
+		ShowSlug:     showSlug,
+		SeasonNumber: req.SeasonNumber,
+		Title:        req.Title,
+		Tagline:      req.Tagline,
+		Year:         req.Year,
+		Status:       req.Status,
+	}
+
+	s.seasons[seasonID] = season
+	return season, nil
+}
+
+func (s *Store) AdminCreateContestant(req models.AdminCreateContestantRequest) (*models.Contestant, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if req.Name == "" || req.SeasonID == "" {
+		return nil, errors.New("name and season_id are required")
+	}
+
+	cID := fmt.Sprintf("c_%d", time.Now().UnixNano())
+	slug := strings.ToLower(strings.ReplaceAll(req.Name, " ", "-"))
+
+	contestant := &models.Contestant{
+		ID:              cID,
+		SeasonID:        req.SeasonID,
+		Name:            req.Name,
+		NativeName:      req.NativeName,
+		Slug:            slug,
+		PhotoURL:        req.PhotoURL,
+		Bio:             req.Bio,
+		Occupation:      req.Occupation,
+		City:            req.City,
+		InstagramHandle: req.InstagramHandle,
+		Status:          req.Status,
+	}
+
+	if contestant.Status == "" {
+		contestant.Status = "in_house"
+	}
+	if contestant.PhotoURL == "" {
+		contestant.PhotoURL = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80"
+	}
+
+	s.contestants[cID] = contestant
+	return contestant, nil
+}
+
+func (s *Store) AdminDeleteContestant(id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.contestants, id)
+	return nil
+}
+
+func (s *Store) AdminCreatePoll(req models.AdminCreatePollRequest) (*models.NominationWeek, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	season, exists := s.seasons[req.SeasonID]
+	if !exists {
+		return nil, errors.New("season does not exist")
+	}
+
+	// Deactivate any existing active poll for this season
+	for _, w := range s.weeks {
+		if w.SeasonID == req.SeasonID && w.IsActive {
+			w.IsActive = false
+			w.IsClosed = true
+		}
+	}
+
+	weekID := fmt.Sprintf("%s-week-%d", req.SeasonID, req.WeekNumber)
+
+	// Fetch nominated contestants
+	var nominees []models.Contestant
+	for _, nid := range req.NomineeIDs {
+		if c, ok := s.contestants[nid]; ok {
+			nomineeCopy := *c
+			nomineeCopy.VoteCount = 0
+			nomineeCopy.VoteShare = 0
+			nominees = append(nominees, nomineeCopy)
+		}
+	}
+
+	week := &models.NominationWeek{
+		ID:           weekID,
+		SeasonID:     req.SeasonID,
+		ShowSlug:     season.ShowSlug,
+		SeasonNumber: season.SeasonNumber,
+		WeekNumber:   req.WeekNumber,
+		Title:        req.Title,
+		Description:  req.Description,
+		StartsAt:     req.StartsAt,
+		EndsAt:       req.EndsAt,
+		IsActive:     true,
+		IsClosed:     false,
+		TotalVotes:   0,
+		Nominees:     nominees,
+	}
+
+	s.weeks[weekID] = week
+	return week, nil
+}
+
+func (s *Store) AdminEvictContestant(weekID string, req models.AdminEvictContestantRequest) (*models.NominationWeek, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	w, exists := s.weeks[weekID]
+	if !exists {
+		return nil, errors.New("week not found")
+	}
+
+	w.IsActive = false
+	w.IsClosed = true
+	w.OfficialEvictionAnnounced = true
+	w.OfficialEvictedContestantID = &req.ContestantID
+
+	for i := range w.Nominees {
+		if w.Nominees[i].ID == req.ContestantID {
+			w.Nominees[i].IsEvicted = true
+			w.Nominees[i].EvictionReason = req.EvictionReason
+			w.Nominees[i].Status = "evicted"
+		}
+	}
+
+	// Update contestant global status too
+	if c, ok := s.contestants[req.ContestantID]; ok {
+		c.Status = "evicted"
+		c.IsEvicted = true
+	}
+
+	return w, nil
+}
+
+func (s *Store) AdminDeletePoll(weekID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.weeks, weekID)
+	return nil
+}
+
+func (s *Store) GetAllWeeks() []*models.NominationWeek {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-
-	// Return mock completed weeks
-	return []models.NominationWeek{
-		{
-			ID:                        "bb-hindi-s20-w2",
-			SeasonID:                  "bb-hindi-s20",
-			WeekNumber:                2,
-			Title:                     "Week 2 Eviction: Aasif, Rohed & ScoutOP",
-			Description:               "Direct nominations after rule violations.",
-			StartsAt:                  time.Now().Add(-14 * 24 * time.Hour),
-			EndsAt:                    time.Now().Add(-7 * 24 * time.Hour),
-			IsActive:                  false,
-			IsClosed:                  true,
-			OfficialEvictionAnnounced: true,
-			TotalVotes:                8950,
-			Nominees: []models.Contestant{
-				{
-					ID:         "c-scout",
-					Name:       "Tanmay Singh (ScoutOP)",
-					NativeName: "तन्मय सिंह (स्काउटओपी)",
-					PhotoURL:   "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80",
-					VoteCount:  4810,
-					VoteShare:  53.7,
-					Status:     "in_house",
-					IsEvicted:  false,
-				},
-				{
-					ID:         "c-aasif",
-					Name:       "Aasif Khan",
-					NativeName: "आसिफ खान",
-					PhotoURL:   "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
-					VoteCount:  2410,
-					VoteShare:  26.9,
-					Status:     "in_house",
-					IsEvicted:  false,
-				},
-				{
-					ID:         "c-rohed",
-					Name:       "Rohed Khan",
-					NativeName: "रोहेद खान",
-					PhotoURL:   "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=400&q=80",
-					VoteCount:  1730,
-					VoteShare:  19.3,
-					Status:     "evicted",
-					IsEvicted:  true,
-				},
-			},
-		},
-		{
-			ID:                        "bb-hindi-s20-w1",
-			SeasonID:                  "bb-hindi-s20",
-			WeekNumber:                1,
-			Title:                     "Week 1 Opening Nominations",
-			Description:               "First week nominations: Uditi Singh lost life token, no eviction occurred.",
-			StartsAt:                  time.Now().Add(-21 * 24 * time.Hour),
-			EndsAt:                    time.Now().Add(-14 * 24 * time.Hour),
-			IsActive:                  false,
-			IsClosed:                  true,
-			OfficialEvictionAnnounced: true,
-			TotalVotes:                4210,
-			Nominees: []models.Contestant{
-				{
-					ID:         "c-arishfa",
-					Name:       "Sayyed Arishfa Khan",
-					NativeName: "सैयद अरिशफा खान",
-					PhotoURL:   "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80",
-					VoteCount:  1850,
-					VoteShare:  43.9,
-					Status:     "in_house",
-					IsEvicted:  false,
-				},
-				{
-					ID:         "c-uditi",
-					Name:       "Uditi Singh",
-					NativeName: "उदिति सिंह",
-					PhotoURL:   "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
-					VoteCount:  750,
-					VoteShare:  17.8,
-					Status:     "in_house",
-					IsEvicted:  false,
-				},
-			},
-		},
+	var list []*models.NominationWeek
+	for _, w := range s.weeks {
+		list = append(list, w)
 	}
+	return list
 }

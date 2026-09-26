@@ -17,7 +17,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Device-ID")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Device-ID, X-Admin-Key")
 
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
@@ -31,7 +31,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "8081"
 	}
 
 	log.Println("🚀 Starting BiggBossPulse Go Engine...")
@@ -53,27 +53,24 @@ func main() {
 	// Health check
 	mux.HandleFunc("/api/health", api.HealthCheck)
 
-	// Shows
+	// Shows & Seasons
 	mux.HandleFunc("/api/shows", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/shows" {
+		if r.URL.Path == "/api/shows" || r.URL.Path == "/api/shows/" {
 			api.GetShows(w, r)
+		} else if strings.Contains(r.URL.Path, "/seasons/") {
+			api.GetSeasonDetail(w, r)
+		} else if strings.HasSuffix(r.URL.Path, "/seasons") || strings.HasSuffix(r.URL.Path, "/seasons/") {
+			api.GetSeasonsByShow(w, r)
 		} else {
 			api.GetShowBySlug(w, r)
 		}
 	})
 
-	// Polls
-	mux.HandleFunc("/api/polls/active", api.GetActivePolls)
+	// Polls & Voting
 	mux.HandleFunc("/api/polls/vote", api.CastVote)
-	mux.HandleFunc("/api/polls/", func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasSuffix(r.URL.Path, "/archive") {
-			api.GetWeekArchive(w, r)
-		} else {
-			api.GetPollByID(w, r)
-		}
-	})
+	mux.HandleFunc("/api/polls/", api.GetPollByID)
 
-	// Chat
+	// Live Chat
 	mux.HandleFunc("/api/chat/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			api.PostChat(w, r)
@@ -84,6 +81,22 @@ func main() {
 
 	// Anonymous Device Registration
 	mux.HandleFunc("/api/device/register", api.RegisterDevice)
+
+	// ===================================================================
+	// ADMIN CRUD ENDPOINTS
+	// ===================================================================
+	mux.HandleFunc("/api/admin/data", api.AdminGetAllDataHandler)
+	mux.HandleFunc("/api/admin/seasons", api.AdminCreateSeasonHandler)
+	mux.HandleFunc("/api/admin/contestants", api.AdminCreateContestantHandler)
+	mux.HandleFunc("/api/admin/contestants/", api.AdminDeleteContestantHandler)
+	mux.HandleFunc("/api/admin/polls", api.AdminCreatePollHandler)
+	mux.HandleFunc("/api/admin/polls/", func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/evict") {
+			api.AdminEvictContestantHandler(w, r)
+		} else if r.Method == http.MethodDelete {
+			api.AdminDeletePollHandler(w, r)
+		}
+	})
 
 	// WebSocket Live Chat and Vote Stream
 	mux.HandleFunc("/ws", realtime.ServeWs)

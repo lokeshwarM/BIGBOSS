@@ -22,16 +22,17 @@ type Show struct {
 
 // Season represents a specific season of a show
 type Season struct {
-	ID                   string        `json:"id"`
-	ShowID               string        `json:"show_id"`
-	SeasonNumber         int           `json:"season_number"`
-	Title                string        `json:"title"`
-	Tagline              string        `json:"tagline"`
-	Year                 int           `json:"year"`
-	Status               string        `json:"status"` // 'upcoming', 'ongoing', 'completed'
-	TotalContestants     int           `json:"total_contestants"`
-	RemainingContestants int           `json:"remaining_contestants"`
-	Contestants          []Contestant  `json:"contestants,omitempty"`
+	ID                   string          `json:"id"`
+	ShowID               string          `json:"show_id"`
+	ShowSlug             string          `json:"show_slug,omitempty"`
+	SeasonNumber         int             `json:"season_number"`
+	Title                string          `json:"title"`
+	Tagline              string          `json:"tagline"`
+	Year                 int             `json:"year"`
+	Status               string          `json:"status"` // 'upcoming', 'ongoing', 'completed'
+	TotalContestants     int             `json:"total_contestants"`
+	RemainingContestants int             `json:"remaining_contestants"`
+	Contestants          []Contestant    `json:"contestants,omitempty"`
 	ActiveWeek           *NominationWeek `json:"active_week,omitempty"`
 }
 
@@ -53,12 +54,15 @@ type Contestant struct {
 	VoteShare        float64   `json:"vote_share,omitempty"`
 	VoteCount        int64     `json:"vote_count,omitempty"`
 	IsEvicted        bool      `json:"is_evicted,omitempty"`
+	EvictionReason   string    `json:"eviction_reason,omitempty"`
 }
 
 // NominationWeek represents a weekly voting window (Mon night - Fri night)
 type NominationWeek struct {
 	ID                         string              `json:"id"`
 	SeasonID                   string              `json:"season_id"`
+	ShowSlug                   string              `json:"show_slug,omitempty"`
+	SeasonNumber               int                 `json:"season_number,omitempty"`
 	WeekNumber                 int                 `json:"week_number"`
 	Title                      string              `json:"title"`
 	Description                string              `json:"description"`

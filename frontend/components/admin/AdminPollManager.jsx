@@ -5,9 +5,13 @@ import { Vote, Trash2, CheckCircle2, UserX } from 'lucide-react';
 import { adminCreatePoll, adminEvictContestant, adminClosePoll, adminDeletePoll } from '../../lib/api';
 import { useTheme } from '../../context/ThemeContext';
 
-export default function AdminPollManager({ seasons, contestants, polls, onRefresh }) {
+export default function AdminPollManager({ seasons = [], contestants = [], polls = [], onRefresh }) {
   const { isLight } = useTheme();
-  const [selectedSeasonId, setSelectedSeasonId] = useState(seasons?.[0]?.id || '');
+  const safeSeasons = Array.isArray(seasons) ? seasons : [];
+  const safeContestants = Array.isArray(contestants) ? contestants : [];
+  const safePolls = Array.isArray(polls) ? polls : [];
+
+  const [selectedSeasonId, setSelectedSeasonId] = useState(safeSeasons[0]?.id || '');
   const [weekNumber, setWeekNumber] = useState(1);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -19,9 +23,9 @@ export default function AdminPollManager({ seasons, contestants, polls, onRefres
   const [evictWeekId, setEvictWeekId] = useState('');
   const [evictContestantId, setEvictContestantId] = useState('');
 
-  const activeSeasonId = selectedSeasonId || seasons?.[0]?.id || '';
-  const availableContestants = contestants?.filter((c) => c.season_id === activeSeasonId && c.status === 'in_house') || [];
-  const seasonPolls = polls?.filter((p) => p.season_id === activeSeasonId) || [];
+  const activeSeasonId = selectedSeasonId || safeSeasons[0]?.id || '';
+  const availableContestants = safeContestants.filter((c) => c && c.season_id === activeSeasonId && c.status === 'in_house');
+  const seasonPolls = safePolls.filter((p) => p && p.season_id === activeSeasonId);
 
   const handleToggleNominee = (id) => {
     setSelectedNomineeIds((prev) =>

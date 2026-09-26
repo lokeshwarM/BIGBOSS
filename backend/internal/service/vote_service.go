@@ -126,11 +126,12 @@ func GetSeasonsByShow(showSlug string) []models.Season {
 	if database.IsConnected() {
 		show, err := database.GetShowBySlug(showSlug)
 		if err != nil {
-			return nil
+			return make([]models.Season, 0)
 		}
 		seasons, err := database.GetSeasonsByShow(show.ID)
 		if err != nil {
 			log.Printf("GetSeasonsByShow DB error: %v", err)
+			return make([]models.Season, 0)
 		}
 		// Attach slug
 		for i := range seasons {
@@ -141,7 +142,7 @@ func GetSeasonsByShow(showSlug string) []models.Season {
 	// memory fallback
 	mem.mu.RLock()
 	defer mem.mu.RUnlock()
-	var result []models.Season
+	result := make([]models.Season, 0)
 	for _, s := range mem.seasons {
 		if s.ShowSlug == showSlug {
 			result = append(result, *s)
@@ -250,12 +251,16 @@ func GetContestantsBySeason(seasonID string) []models.Contestant {
 		list, err := database.GetContestantsBySeason(seasonID)
 		if err != nil {
 			log.Printf("GetContestantsBySeason DB error: %v", err)
+			return make([]models.Contestant, 0)
+		}
+		if list == nil {
+			return make([]models.Contestant, 0)
 		}
 		return list
 	}
 	mem.mu.RLock()
 	defer mem.mu.RUnlock()
-	var list []models.Contestant
+	list := make([]models.Contestant, 0)
 	for _, c := range mem.contestants {
 		if c.SeasonID == seasonID {
 			list = append(list, *c)
@@ -671,8 +676,11 @@ func AddChatMessage(req models.ChatRequest) (*models.ChatMessage, error) {
 
 func GetAdminData() map[string]any {
 	shows := GetShows()
-	var allSeasons []models.Season
-	var allContestants []models.Contestant
+	if shows == nil {
+		shows = make([]models.Show, 0)
+	}
+	allSeasons := make([]models.Season, 0)
+	allContestants := make([]models.Contestant, 0)
 
 	for _, show := range shows {
 		seasons := GetSeasonsByShow(show.Slug)
@@ -683,6 +691,9 @@ func GetAdminData() map[string]any {
 		}
 	}
 	allWeeks := GetAllWeeks()
+	if allWeeks == nil {
+		allWeeks = make([]models.NominationWeek, 0)
+	}
 
 	return map[string]any{
 		"shows":       shows,

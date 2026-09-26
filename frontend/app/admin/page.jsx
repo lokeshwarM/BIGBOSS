@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Navbar from '../../components/Navbar';
 import AdminSeasonManager from '../../components/admin/AdminSeasonManager';
 import AdminContestantManager from '../../components/admin/AdminContestantManager';
@@ -14,10 +15,15 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { Settings, Users, Vote, Calendar, RefreshCw, ShieldAlert, Lock, LogIn } from 'lucide-react';
 
-export default function AdminPage() {
+function AdminPageContent() {
   const { isLight } = useTheme();
-  const { user, isAdmin, loginWithDev, isAuthenticated } = useAuth();
-  const [activeTab, setActiveTab] = useState('contestants');
+  const { user, isAdmin, loginWithDev } = useAuth();
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams?.get('tab');
+  const requestedShow = searchParams?.get('show');
+
+  // Default to 'seasons' tab so admin directly lands on season creation / management
+  const [activeTab, setActiveTab] = useState(requestedTab || 'seasons');
   const [adminData, setAdminData] = useState({ shows: [], seasons: [], contestants: [], polls: [] });
   const [deviceAccount, setDeviceAccount] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -25,12 +31,30 @@ export default function AdminPage() {
   const [adminSecretInput, setAdminSecretInput] = useState('');
   const [authError, setAuthError] = useState('');
 
+  // Sync tab if URL query changes
+  useEffect(() => {
+    if (requestedTab) {
+      setActiveTab(requestedTab);
+    }
+  }, [requestedTab]);
+
   const loadData = async () => {
     setIsLoading(true);
     try {
       const data = await fetchAdminData();
-      setAdminData(data);
+      const safeSeasons = Array.isArray(data?.seasons) ? data.seasons : [];
+      setAdminData({
+        shows: Array.isArray(data?.shows) ? data.shows : [],
+        seasons: safeSeasons,
+        contestants: Array.isArray(data?.contestants) ? data.contestants : [],
+        polls: Array.isArray(data?.polls) ? data.polls : [],
+      });
       setAuthError('');
+
+      // If no seasons exist on the platform and user hasn't explicitly picked another tab, guide them to seasons
+      if (safeSeasons.length === 0 && !requestedTab) {
+        setActiveTab('seasons');
+      }
     } catch (err) {
       console.warn('Failed to load admin data:', err);
       setAuthError(err.message || 'Unauthorized');
@@ -172,6 +196,21 @@ export default function AdminPage() {
           }`}
         >
           <button
+            onClick={() => setActiveTab('seasons')}
+            className={`py-2 rounded-lg text-xs font-bold flex items-center justify-center space-x-1 transition-all ${
+              activeTab === 'seasons'
+                ? isLight
+                  ? 'bg-gradient-to-r from-[#00A8E1] to-[#0073B1] text-white shadow-md shadow-sky-500/20'
+                  : 'bg-[#E50914] text-white shadow-md'
+                : isLight
+                ? 'text-slate-600 hover:text-slate-900'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            <Calendar className="w-3.5 h-3.5" />
+            <span className="hidden xs:inline">Seasons</span>
+          </button>
+          <button
             onClick={() => setActiveTab('contestants')}
             className={`py-2 rounded-lg text-xs font-bold flex items-center justify-center space-x-1 transition-all ${
               activeTab === 'contestants'
@@ -202,21 +241,6 @@ export default function AdminPage() {
             <span className="hidden xs:inline">Polls</span>
           </button>
           <button
-            onClick={() => setActiveTab('seasons')}
-            className={`py-2 rounded-lg text-xs font-bold flex items-center justify-center space-x-1 transition-all ${
-              activeTab === 'seasons'
-                ? isLight
-                  ? 'bg-gradient-to-r from-[#00A8E1] to-[#0073B1] text-white shadow-md shadow-sky-500/20'
-                  : 'bg-[#E50914] text-white shadow-md'
-                : isLight
-                ? 'text-slate-600 hover:text-slate-900'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            <Calendar className="w-3.5 h-3.5" />
-            <span className="hidden xs:inline">Seasons</span>
-          </button>
-          <button
             onClick={() => setActiveTab('moderation')}
             className={`py-2 rounded-lg text-xs font-bold flex items-center justify-center space-x-1 transition-all ${
               activeTab === 'moderation'
@@ -234,28 +258,29 @@ export default function AdminPage() {
         </div>
 
         {/* Tab Panels */}
+        {activeTab === 'seasons' && (
+          <AdminSeasonManager
+            shows={adminData.shows || []}
+            seasons={adminData.seasons || []}
+            initialShowSlug={requestedShow}
+            onSeasonCreated={loadData}
+            onRefresh={loadData}
+          />
+        )}
+
         {activeTab === 'contestants' && (
           <AdminContestantManager
-            seasons={adminData.seasons}
-            contestants={adminData.contestants}
+            seasons={adminData.seasons || []}
+            contestants={adminData.contestants || []}
             onRefresh={loadData}
           />
         )}
 
         {activeTab === 'polls' && (
           <AdminPollManager
-            seasons={adminData.seasons}
-            contestants={adminData.contestants}
-            polls={adminData.polls}
-            onRefresh={loadData}
-          />
-        )}
-
-        {activeTab === 'seasons' && (
-          <AdminSeasonManager
-            shows={adminData.shows}
-            seasons={adminData.seasons}
-            onSeasonCreated={loadData}
+            seasons={adminData.seasons || []}
+            contestants={adminData.contestants || []}
+            polls={adminData.polls || []}
             onRefresh={loadData}
           />
         )}
@@ -272,5 +297,13 @@ export default function AdminPage() {
         onUpdate={(updated) => setDeviceAccount(updated)}
       />
     </div>
+  );
+}
+
+export default function AdminPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#141414] text-white text-xs">Loading Admin Studio...</div>}>
+      <AdminPageContent />
+    </Suspense>
   );
 }

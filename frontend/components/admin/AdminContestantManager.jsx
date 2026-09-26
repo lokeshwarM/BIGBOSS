@@ -5,9 +5,12 @@ import { UserPlus, Trash2, Edit3, Check, X, Users, AlertCircle } from 'lucide-re
 import { adminCreateContestant, adminUpdateContestant, adminDeleteContestant } from '../../lib/api';
 import { useTheme } from '../../context/ThemeContext';
 
-export default function AdminContestantManager({ seasons, contestants, onRefresh }) {
+export default function AdminContestantManager({ seasons = [], contestants = [], onRefresh }) {
   const { isLight } = useTheme();
-  const [selectedSeasonId, setSelectedSeasonId] = useState(seasons?.[0]?.id || '');
+  const safeSeasons = Array.isArray(seasons) ? seasons : [];
+  const safeContestants = Array.isArray(contestants) ? contestants : [];
+
+  const [selectedSeasonId, setSelectedSeasonId] = useState(safeSeasons[0]?.id || '');
   const [name, setName] = useState('');
   const [nativeName, setNativeName] = useState('');
   const [photoUrl, setPhotoUrl] = useState('');
@@ -21,8 +24,8 @@ export default function AdminContestantManager({ seasons, contestants, onRefresh
   const [editingId, setEditingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
 
-  const activeSeasonId = selectedSeasonId || seasons?.[0]?.id || '';
-  const filteredContestants = contestants?.filter((c) => c.season_id === activeSeasonId) || [];
+  const activeSeasonId = selectedSeasonId || safeSeasons[0]?.id || '';
+  const filteredContestants = safeContestants.filter((c) => c && c.season_id === activeSeasonId);
 
   const handleStartEdit = (c) => {
     setEditingId(c.id);

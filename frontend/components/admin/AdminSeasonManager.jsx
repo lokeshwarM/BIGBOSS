@@ -1,19 +1,28 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PlusCircle, Calendar, Edit3, Trash2, Check, X, Mic, AlertCircle, Sparkles, Filter } from 'lucide-react';
 import { adminCreateSeason, adminUpdateSeason, adminDeleteSeason } from '../../lib/api';
 import { useTheme } from '../../context/ThemeContext';
 
-export default function AdminSeasonManager({ shows = [], seasons = [], onSeasonCreated, onRefresh }) {
+export default function AdminSeasonManager({
+  shows = [],
+  seasons = [],
+  initialShowSlug,
+  onSeasonCreated,
+  onRefresh,
+}) {
   const { isLight } = useTheme();
+
+  const safeShows = Array.isArray(shows) ? shows : [];
+  const safeSeasons = Array.isArray(seasons) ? seasons : [];
 
   // Filter state for seasons list
   const [selectedFilter, setSelectedFilter] = useState('all');
 
   // Form state
-  const [showSlug, setShowSlug] = useState(shows?.[0]?.slug || 'telugu');
-  const [seasonNumber, setSeasonNumber] = useState(10);
+  const [showSlug, setShowSlug] = useState(initialShowSlug || safeShows[0]?.slug || 'telugu');
+  const [seasonNumber, setSeasonNumber] = useState(1);
   const [title, setTitle] = useState('');
   const [hostName, setHostName] = useState('');
   const [tagline, setTagline] = useState('');
@@ -27,16 +36,29 @@ export default function AdminSeasonManager({ shows = [], seasons = [], onSeasonC
   const [message, setMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
+  // Update showSlug if initialShowSlug or shows change
+  useEffect(() => {
+    if (initialShowSlug) {
+      setShowSlug(initialShowSlug);
+    } else if (safeShows.length > 0 && !showSlug) {
+      setShowSlug(safeShows[0].slug);
+    }
+  }, [initialShowSlug, safeShows]);
+
   // Filter seasons list
-  const filteredSeasons = seasons.filter((s) => {
+  const filteredSeasons = safeSeasons.filter((s) => {
+    if (!s) return false;
     if (selectedFilter === 'all') return true;
-    const show = shows.find((sh) => sh.slug === selectedFilter);
+    const show = safeShows.find((sh) => sh.slug === selectedFilter);
     return s.show_slug === selectedFilter || (show && s.show_id === show.id);
   });
 
   const handleStartEdit = (season) => {
     setEditingId(season.id);
-    const matchedShow = shows.find((sh) => sh.id === season.show_id) || shows.find((sh) => sh.slug === season.show_slug);
+    const matchedShow =
+      safeShows.find((sh) => sh.id === season.show_id) ||
+      safeShows.find((sh) => sh.slug === season.show_slug);
+
     if (matchedShow) {
       setShowSlug(matchedShow.slug);
     } else if (season.show_slug) {
@@ -58,7 +80,7 @@ export default function AdminSeasonManager({ shows = [], seasons = [], onSeasonC
     setTitle('');
     setHostName('');
     setTagline('');
-    setSeasonNumber(10);
+    setSeasonNumber(1);
     setYear(2026);
     setStatus('ongoing');
     setMessage('');
@@ -72,7 +94,9 @@ export default function AdminSeasonManager({ shows = [], seasons = [], onSeasonC
     setErrorMessage('');
 
     try {
-      const generatedTitle = title.trim() || `Bigg Boss ${showSlug.toUpperCase()} Season ${seasonNumber}`;
+      const selectedShowObj = safeShows.find((s) => s.slug === showSlug);
+      const showName = selectedShowObj ? selectedShowObj.name : `Bigg Boss ${showSlug.toUpperCase()}`;
+      const generatedTitle = title.trim() || `${showName} Season ${seasonNumber}`;
 
       if (editingId) {
         // Update existing season
@@ -210,7 +234,7 @@ export default function AdminSeasonManager({ shows = [], seasons = [], onSeasonC
                   : 'bg-[#121212] border-[#2A2A2A] text-white'
               }`}
             >
-              {shows?.map((s) => (
+              {safeShows.map((s) => (
                 <option key={s.slug} value={s.slug}>
                   {s.name} ({s.language})
                 </option>
@@ -371,13 +395,13 @@ export default function AdminSeasonManager({ shows = [], seasons = [], onSeasonC
       <div>
         <div className="flex items-center justify-between mb-2">
           <div className={`text-[11px] font-bold ${isLight ? 'text-slate-600' : 'text-gray-400'}`}>
-            <span>Manage Existing Seasons ({seasons.length}):</span>
+            <span>Manage Existing Seasons ({safeSeasons.length}):</span>
           </div>
           <span className="text-[10px] text-gray-500 font-normal">Edit host, title & year • Delete season</span>
         </div>
 
         {/* Filter bar */}
-        {shows?.length > 1 && (
+        {safeShows.length > 1 && (
           <div className="flex items-center space-x-1 overflow-x-auto pb-1 mb-2">
             <button
               onClick={() => setSelectedFilter('all')}
@@ -391,10 +415,10 @@ export default function AdminSeasonManager({ shows = [], seasons = [], onSeasonC
                   : 'bg-white/10 text-gray-400 hover:text-white'
               }`}
             >
-              All ({seasons.length})
+              All ({safeSeasons.length})
             </button>
-            {shows.map((sh) => {
-              const count = seasons.filter((s) => s.show_slug === sh.slug || s.show_id === sh.id).length;
+            {safeShows.map((sh) => {
+              const count = safeSeasons.filter((s) => s.show_slug === sh.slug || s.show_id === sh.id).length;
               return (
                 <button
                   key={sh.slug}
@@ -424,7 +448,7 @@ export default function AdminSeasonManager({ shows = [], seasons = [], onSeasonC
             filteredSeasons.map((season) => {
               const isEditingThis = editingId === season.id;
               const isDeletingThis = deletingId === season.id;
-              const show = shows.find((sh) => sh.id === season.show_id || sh.slug === season.show_slug);
+              const show = safeShows.find((sh) => sh.id === season.show_id || sh.slug === season.show_slug);
 
               return (
                 <div

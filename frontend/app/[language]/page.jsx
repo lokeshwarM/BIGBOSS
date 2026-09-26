@@ -123,7 +123,7 @@ export default function LanguageShowPage() {
                   ✨ Ready for New Season
                 </span>
                 <Link
-                  href="/admin"
+                  href={`/admin?tab=seasons&show=${language}`}
                   className="px-3 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-white font-bold text-xs flex items-center space-x-1"
                 >
                   <PlusCircle className="w-3.5 h-3.5" />
@@ -168,7 +168,7 @@ export default function LanguageShowPage() {
               </div>
               <div className="pt-1">
                 <Link
-                  href="/admin"
+                  href={`/admin?tab=seasons&show=${language}`}
                   className={`inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md active:scale-95 ${
                     isLight
                       ? 'bg-gradient-to-r from-[#00A8E1] to-[#0073B1] hover:from-[#0096CC] hover:to-[#005F94]'

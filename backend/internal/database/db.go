@@ -1,26 +1,27 @@
 package database
 
 import (
+	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"os"
-	"sync"
 	"time"
 
+	"github.com/biggboss/pulse/migrations"
 	_ "github.com/lib/pq"
 )
 
 var (
-	DB        *sql.DB
-	isLive    bool
-	dbMutex   sync.RWMutex
+	DB     *sql.DB
+	isLive bool
 )
 
-// InitDB initializes PostgreSQL connection to Neon
+// InitDB initializes PostgreSQL connection to Neon and runs schema migrations
 func InitDB() error {
 	dbURL := os.Getenv("DATABASE_URL")
-	if dbURL == "" || dbURL == "postgresql://user:password@ep-sample-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require" {
-		log.Println("⚠️  No live Neon DATABASE_URL provided or placeholder detected. Operating in High-Performance In-Memory store mode.")
+	if dbURL == "" {
+		log.Println("⚠️  No DATABASE_URL provided. Operating in degraded in-memory mode.")
 		isLive = false
 		return nil
 	}
@@ -34,39 +35,73 @@ func InitDB() error {
 	}
 
 	// Neon PgBouncer recommended pool configurations
-	DB.SetMaxOpenConns(25)
-	DB.SetMaxIdleConns(10)
+	DB.SetMaxOpenConns(20)
+	DB.SetMaxIdleConns(5)
 	DB.SetConnMaxLifetime(5 * time.Minute)
+	DB.SetConnMaxIdleTime(1 * time.Minute)
 
-	ctxPing, cancel := setTimeout(4 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 	defer cancel()
 
-	if err = DB.PingContext(ctxPing); err != nil {
-		log.Printf("⚠️  Could not connect to live database (%v). Operating gracefully in in-memory mode.", err)
+	if err = DB.PingContext(ctx); err != nil {
+		log.Printf("⚠️  Could not connect to live database (%v). Operating in in-memory mode.", err)
 		isLive = false
 		return nil
 	}
 
 	log.Println("✅ Successfully connected to Neon PostgreSQL!")
 	isLive = true
+
+	// Automatically run migrations to guarantee schema & seed data exist
+	if err := RunMigrations(); err != nil {
+		log.Printf("⚠️  Migration execution notice: %v", err)
+	}
+
+	return nil
+}
+
+// RunMigrations applies 001_initial_schema.sql and 002_seed_data.sql
+func RunMigrations() error {
+	if DB == nil {
+		return fmt.Errorf("database not initialized")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	log.Println("🔄 Ensuring database schema is up-to-date...")
+	if _, err := DB.ExecContext(ctx, migrations.InitialSchema); err != nil {
+		return fmt.Errorf("failed to apply initial schema: %w", err)
+	}
+	log.Println("✅ Database schema verified!")
+
+	if migrations.SeedData != "" {
+		if _, err := DB.ExecContext(ctx, migrations.SeedData); err != nil {
+			log.Printf("ℹ️  Seed data info (records may already exist): %v", err)
+		} else {
+			log.Println("✅ Seed data inserted successfully!")
+		}
+	}
 	return nil
 }
 
 // IsConnected returns whether live DB is active
 func IsConnected() bool {
-	dbMutex.RLock()
-	defer dbMutex.RUnlock()
 	return isLive
 }
 
-func setTimeout(d time.Duration) (contextWrapper, func()) {
-	// simple timeout context simulation compatible with context.WithTimeout
-	return contextWrapper{}, func() {}
+// Q returns a context with a standard query timeout
+func Q() (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), 8*time.Second)
 }
 
-type contextWrapper struct{}
-
-func (c contextWrapper) Deadline() (deadline time.Time, ok bool) { return time.Now().Add(4 * time.Second), true }
-func (c contextWrapper) Done() <-chan struct{}                   { return nil }
-func (c contextWrapper) Err() error                              { return nil }
-func (c contextWrapper) Value(key any) any                       { return nil }
+// Exec runs a non-query statement with timeout context, logging the error
+func Exec(query string, args ...any) error {
+	if DB == nil {
+		return fmt.Errorf("database not connected")
+	}
+	ctx, cancel := Q()
+	defer cancel()
+	_, err := DB.ExecContext(ctx, query, args...)
+	return err
+}

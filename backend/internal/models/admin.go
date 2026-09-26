@@ -32,7 +32,8 @@ type AdminCreateContestantRequest struct {
 	Occupation      string `json:"occupation"`
 	City            string `json:"city"`
 	InstagramHandle string `json:"instagram_handle"`
-	Status          string `json:"status"` // 'in_house', 'evicted', 'winner'
+	Status          string `json:"status"`    // 'in_house', 'evicted', 'winner'
+	EntryType       string `json:"entry_type"` // 'original', 'wildcard', 'guest'
 }
 
 // AdminCreatePollRequest

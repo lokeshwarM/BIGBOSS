@@ -34,58 +34,59 @@ type Season struct {
 	RemainingContestants int             `json:"remaining_contestants"`
 	Contestants          []Contestant    `json:"contestants,omitempty"`
 	ActiveWeek           *NominationWeek `json:"active_week,omitempty"`
+	CreatedAt            time.Time       `json:"created_at"`
 }
 
 // Contestant represents a housemate
 type Contestant struct {
-	ID               string    `json:"id"`
-	SeasonID         string    `json:"season_id"`
-	Name             string    `json:"name"`
-	NativeName       string    `json:"native_name"`
-	Slug             string    `json:"slug"`
-	PhotoURL         string    `json:"photo_url"`
-	Bio              string    `json:"bio"`
-	Occupation       string    `json:"occupation"`
-	City             string    `json:"city,omitempty"`
-	InstagramHandle  string    `json:"instagram_handle,omitempty"`
-	Status           string    `json:"status"` // 'in_house', 'evicted', 'winner', 'runner_up'
-	EntryType        string    `json:"entry_type"` // 'original', 'wildcard'
-	NominationsCount int       `json:"nominations_count"`
-	VoteShare        float64   `json:"vote_share,omitempty"`
-	VoteCount        int64     `json:"vote_count,omitempty"`
-	IsEvicted        bool      `json:"is_evicted,omitempty"`
-	EvictionReason   string    `json:"eviction_reason,omitempty"`
+	ID               string  `json:"id"`
+	SeasonID         string  `json:"season_id"`
+	Name             string  `json:"name"`
+	NativeName       string  `json:"native_name"`
+	Slug             string  `json:"slug"`
+	PhotoURL         string  `json:"photo_url"`
+	Bio              string  `json:"bio"`
+	Occupation       string  `json:"occupation"`
+	City             string  `json:"city,omitempty"`
+	InstagramHandle  string  `json:"instagram_handle,omitempty"`
+	Status           string  `json:"status"`     // 'in_house', 'evicted', 'winner', 'runner_up'
+	EntryType        string  `json:"entry_type"` // 'original', 'wildcard'
+	NominationsCount int     `json:"nominations_count"`
+	VoteShare        float64 `json:"vote_share,omitempty"`
+	VoteCount        int64   `json:"vote_count,omitempty"`
+	IsEvicted        bool    `json:"is_evicted,omitempty"`
+	EvictionReason   string  `json:"eviction_reason,omitempty"`
 }
 
 // NominationWeek represents a weekly voting window (Mon night - Fri night)
 type NominationWeek struct {
-	ID                         string              `json:"id"`
-	SeasonID                   string              `json:"season_id"`
-	ShowSlug                   string              `json:"show_slug,omitempty"`
-	SeasonNumber               int                 `json:"season_number,omitempty"`
-	WeekNumber                 int                 `json:"week_number"`
-	Title                      string              `json:"title"`
-	Description                string              `json:"description"`
-	StartsAt                   time.Time           `json:"starts_at"`
-	EndsAt                     time.Time           `json:"ends_at"`
-	IsActive                   bool                `json:"is_active"`
-	IsClosed                   bool                `json:"is_closed"`
-	OfficialEvictionAnnounced  bool                `json:"official_eviction_announced"`
-	OfficialEvictedContestantID *string            `json:"official_evicted_contestant_id,omitempty"`
-	TotalVotes                 int64               `json:"total_votes"`
-	Nominees                   []Contestant        `json:"nominees,omitempty"`
-	Show                       *Show               `json:"show,omitempty"`
+	ID                          string       `json:"id"`
+	SeasonID                    string       `json:"season_id"`
+	ShowSlug                    string       `json:"show_slug,omitempty"`
+	SeasonNumber                int          `json:"season_number,omitempty"`
+	WeekNumber                  int          `json:"week_number"`
+	Title                       string       `json:"title"`
+	Description                 string       `json:"description"`
+	StartsAt                    time.Time    `json:"starts_at"`
+	EndsAt                      time.Time    `json:"ends_at"`
+	IsActive                    bool         `json:"is_active"`
+	IsClosed                    bool         `json:"is_closed"`
+	OfficialEvictionAnnounced   bool         `json:"official_eviction_announced"`
+	OfficialEvictedContestantID *string      `json:"official_evicted_contestant_id,omitempty"`
+	TotalVotes                  int64        `json:"total_votes"`
+	Nominees                    []Contestant `json:"nominees,omitempty"`
+	Show                        *Show        `json:"show,omitempty"`
 }
 
 // DeviceAccount represents an anonymous 1-click guest user
 type DeviceAccount struct {
-	ID           string    `json:"id"`
-	DeviceID     string    `json:"device_id"`
-	Nickname     string    `json:"nickname"`
-	AvatarColor  string    `json:"avatar_color"`
-	Email        string    `json:"email,omitempty"`
-	IsVerified   bool      `json:"is_verified"`
-	CreatedAt    time.Time `json:"created_at"`
+	ID          string    `json:"id"`
+	DeviceID    string    `json:"device_id"`
+	Nickname    string    `json:"nickname"`
+	AvatarColor string    `json:"avatar_color"`
+	Email       string    `json:"email,omitempty"`
+	IsVerified  bool      `json:"is_verified"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 // Vote represents a cast vote
@@ -108,12 +109,12 @@ type VoteRequest struct {
 
 // VoteResponse is returned after casting a vote
 type VoteResponse struct {
-	Success      bool         `json:"success"`
-	Message      string       `json:"message"`
-	HasVotedToday bool        `json:"has_voted_today"`
-	VotedForID   string       `json:"voted_for_id,omitempty"`
-	TotalVotes   int64        `json:"total_votes"`
-	Standings    []Contestant `json:"standings"`
+	Success       bool         `json:"success"`
+	Message       string       `json:"message"`
+	HasVotedToday bool         `json:"has_voted_today"`
+	VotedForID    string       `json:"voted_for_id,omitempty"`
+	TotalVotes    int64        `json:"total_votes"`
+	Standings     []Contestant `json:"standings"`
 }
 
 // ChatMessage represents a live discussion comment

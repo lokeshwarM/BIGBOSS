@@ -5,10 +5,11 @@
 
 -- 1. EXTENSIONS
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- 2. SHOWS (All 7 Regional Languages)
 CREATE TABLE IF NOT EXISTS shows (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     slug VARCHAR(64) UNIQUE NOT NULL,
     name VARCHAR(128) NOT NULL,
     language VARCHAR(64) NOT NULL,
@@ -25,7 +26,7 @@ CREATE TABLE IF NOT EXISTS shows (
 
 -- 3. SEASONS
 CREATE TABLE IF NOT EXISTS seasons (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     show_id UUID NOT NULL REFERENCES shows(id) ON DELETE CASCADE,
     season_number INT NOT NULL,
     title VARCHAR(128) NOT NULL,
@@ -43,7 +44,7 @@ CREATE TABLE IF NOT EXISTS seasons (
 
 -- 4. CONTESTANTS
 CREATE TABLE IF NOT EXISTS contestants (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     season_id UUID NOT NULL REFERENCES seasons(id) ON DELETE CASCADE,
     name VARCHAR(128) NOT NULL,
     native_name VARCHAR(128),
@@ -65,7 +66,7 @@ CREATE TABLE IF NOT EXISTS contestants (
 
 -- 5. NOMINATION WEEKS (Monday Night to Friday Night Cycle)
 CREATE TABLE IF NOT EXISTS nomination_weeks (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     season_id UUID NOT NULL REFERENCES seasons(id) ON DELETE CASCADE,
     week_number INT NOT NULL,
     title VARCHAR(128) NOT NULL,
@@ -84,7 +85,7 @@ CREATE TABLE IF NOT EXISTS nomination_weeks (
 
 -- 6. WEEKLY NOMINATIONS (Contestants up for eviction in a specific week)
 CREATE TABLE IF NOT EXISTS weekly_nominations (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     week_id UUID NOT NULL REFERENCES nomination_weeks(id) ON DELETE CASCADE,
     contestant_id UUID NOT NULL REFERENCES contestants(id) ON DELETE CASCADE,
     vote_count BIGINT DEFAULT 0,
@@ -96,7 +97,7 @@ CREATE TABLE IF NOT EXISTS weekly_nominations (
 
 -- 7. ANONYMOUS DEVICE ACCOUNTS
 CREATE TABLE IF NOT EXISTS device_accounts (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     device_id VARCHAR(128) UNIQUE NOT NULL, -- Client-generated persistent UUID
     nickname VARCHAR(64) NOT NULL DEFAULT 'BB_Fan',
     avatar_color VARCHAR(16) DEFAULT '#F59E0B',
@@ -108,7 +109,7 @@ CREATE TABLE IF NOT EXISTS device_accounts (
 
 -- 8. VOTES (1 vote per day per device per nomination week)
 CREATE TABLE IF NOT EXISTS votes (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     week_id UUID NOT NULL REFERENCES nomination_weeks(id) ON DELETE CASCADE,
     contestant_id UUID NOT NULL REFERENCES contestants(id) ON DELETE CASCADE,
     device_id VARCHAR(128) NOT NULL,
@@ -121,7 +122,7 @@ CREATE TABLE IF NOT EXISTS votes (
 
 -- 9. LIVE COMMUNITY CHAT & DISCUSSIONS
 CREATE TABLE IF NOT EXISTS chat_messages (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     week_id UUID NOT NULL REFERENCES nomination_weeks(id) ON DELETE CASCADE,
     device_id VARCHAR(128) NOT NULL,
     nickname VARCHAR(64) NOT NULL,

@@ -1,0 +1,55 @@
+# Environment Variables & Secrets (CRITICAL)
+.env
+.env*.local
+*.env
+.env.production
+.env.staging
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js & Frontend Build Outputs
+.next/
+out/
+build/
+dist/
+.vercel
+
+# Go Binaries & Artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+bin/
+server/bin/
+backend/bin/
+vendor/
+
+# Debug and Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.log
+
+# OS & Editor Files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.bak
+
+# Temporary and Cache directories
+.turbo/
+.cache/
+tmp/
+scratch/

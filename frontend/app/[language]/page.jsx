@@ -11,6 +11,12 @@ import { getDeviceAccount } from '../../lib/device';
 import { useTheme } from '../../context/ThemeContext';
 import { Play, ArrowRight, Tv, Users, Calendar, Award } from 'lucide-react';
 
+const LANGUAGE_POSTERS = {
+  telugu: '/images/Telugu.png',
+  tamil: '/images/Tamil.png',
+  kannada: '/images/Kannada.png',
+};
+
 export default function LanguageShowPage() {
   const params = useParams();
   const language = params?.language || 'telugu';
@@ -34,6 +40,7 @@ export default function LanguageShowPage() {
   }, [language]);
 
   const ongoingSeason = seasons.find((s) => s.status === 'ongoing') || seasons[0];
+  const billboardImage = LANGUAGE_POSTERS[language?.toLowerCase()] || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=80";
 
   return (
     <div
@@ -50,9 +57,9 @@ export default function LanguageShowPage() {
         {/* Cinematic Billboard */}
         <div className="relative rounded-3xl overflow-hidden aspect-[16/10] sm:aspect-[21/9] border border-[#2A2A2A] bg-black shadow-2xl">
           <img
-            src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=80"
+            src={billboardImage}
             alt={show?.name || language}
-            className="w-full h-full object-cover object-center brightness-75 scale-105"
+            className="w-full h-full object-cover object-center brightness-90 scale-105"
           />
           <div
             className={`absolute inset-0 bg-gradient-to-t ${

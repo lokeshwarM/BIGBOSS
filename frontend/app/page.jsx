@@ -44,9 +44,9 @@ export default function Home() {
           <div className="relative rounded-3xl overflow-hidden aspect-[16/10] sm:aspect-[21/9] border border-[#2A2A2A] shadow-2xl bg-black">
             {/* Backdrop Visual */}
             <img
-              src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=80"
-              alt="Bigg Boss Spotlight"
-              className="w-full h-full object-cover object-center brightness-75 scale-105"
+              src="/images/Home.png"
+              alt="BIGBOSS Community Spotlight"
+              className="w-full h-full object-cover object-center brightness-90 scale-105"
             />
 
             {/* Gradient Overlays (Netflix / Prime Video Style) */}
@@ -145,7 +145,7 @@ export default function Home() {
                 href="/telugu/season10"
                 title="Bigg Boss Telugu"
                 subtitle="Host: Nagarjuna • Season 10"
-                imageUrl="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=500&q=80"
+                imageUrl="/images/Telugu.png"
                 rank={1}
                 matchScore={99}
                 badgeText="LIVE VOTE"
@@ -154,7 +154,7 @@ export default function Home() {
                 href="/tamil/season10"
                 title="Bigg Boss Tamil"
                 subtitle="Host: Vijay Sethupathi • Season 10"
-                imageUrl="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=500&q=80"
+                imageUrl="/images/Tamil.png"
                 rank={2}
                 matchScore={97}
                 badgeText="WEEK 3"
@@ -172,7 +172,7 @@ export default function Home() {
                 href="/kannada/season13"
                 title="Bigg Boss Kannada"
                 subtitle="Host: Kichcha Sudeep • Season 13"
-                imageUrl="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=500&q=80"
+                imageUrl="/images/Kannada.png"
                 rank={4}
                 matchScore={94}
                 badgeText="ON AIR"

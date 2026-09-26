@@ -15,8 +15,22 @@ import { getDeviceAccount } from '../../../lib/device';
 import { useTheme } from '../../../context/ThemeContext';
 import { ShieldCheck, AlertCircle, Play } from 'lucide-react';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081/api';
-const WS_BASE = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8081/ws';
+const getApiBase = () => {
+  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  if (typeof window !== 'undefined' && window.location?.hostname) {
+    return `${window.location.protocol}//${window.location.hostname}:8081/api`;
+  }
+  return 'http://localhost:8081/api';
+};
+
+const getWsBase = () => {
+  if (process.env.NEXT_PUBLIC_WS_URL) return process.env.NEXT_PUBLIC_WS_URL;
+  if (typeof window !== 'undefined' && window.location?.hostname) {
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${proto}//${window.location.hostname}:8081/ws`;
+  }
+  return 'ws://localhost:8081/ws';
+};
 
 export default function SeasonHubPage() {
   const params = useParams();
@@ -190,8 +204,8 @@ export default function SeasonHubPage() {
           <LiveDiscussion
             weekId={activePoll.id}
             deviceAccount={deviceAccount}
-            apiUrl={API_BASE}
-            wsUrl={WS_BASE}
+            apiUrl={getApiBase()}
+            wsUrl={getWsBase()}
           />
         )}
 

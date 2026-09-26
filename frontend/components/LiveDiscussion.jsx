@@ -7,6 +7,9 @@ import { useTheme } from '../context/ThemeContext';
 
 export default function LiveDiscussion({ weekId, deviceAccount, apiUrl, wsUrl }) {
   const { isLight } = useTheme();
+  const effectiveApiUrl = apiUrl || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:8081/api` : 'http://localhost:8081/api');
+  const effectiveWsUrl = wsUrl || (typeof window !== 'undefined' ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.hostname}:8081/ws` : 'ws://localhost:8081/ws');
+
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -16,7 +19,7 @@ export default function LiveDiscussion({ weekId, deviceAccount, apiUrl, wsUrl })
   useEffect(() => {
     if (!weekId) return;
 
-    fetch(`${apiUrl}/chat/${weekId}`)
+    fetch(`${effectiveApiUrl}/chat/${weekId}`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -26,7 +29,7 @@ export default function LiveDiscussion({ weekId, deviceAccount, apiUrl, wsUrl })
       .catch((err) => console.error('Failed to load chat history:', err));
 
     try {
-      const socket = new WebSocket(`${wsUrl}?week_id=${weekId}&device_id=${deviceAccount?.deviceId}`);
+      const socket = new WebSocket(`${effectiveWsUrl}?week_id=${weekId}&device_id=${deviceAccount?.deviceId}`);
       wsRef.current = socket;
 
       socket.onmessage = (event) => {
@@ -46,7 +49,7 @@ export default function LiveDiscussion({ weekId, deviceAccount, apiUrl, wsUrl })
     } catch (err) {
       console.warn('WebSocket connect skipped:', err);
     }
-  }, [weekId, apiUrl, wsUrl, deviceAccount?.deviceId]);
+  }, [weekId, effectiveApiUrl, effectiveWsUrl, deviceAccount?.deviceId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -68,7 +71,7 @@ export default function LiveDiscussion({ weekId, deviceAccount, apiUrl, wsUrl })
     setInputText('');
 
     try {
-      const res = await fetch(`${apiUrl}/chat/${weekId}`, {
+      const res = await fetch(`${effectiveApiUrl}/chat/${weekId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

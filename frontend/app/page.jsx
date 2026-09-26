@@ -70,7 +70,7 @@ export default function Home() {
                       : 'bg-[#E50914]'
                   }`}
                 >
-                  {isLight ? 'PRIME FEATURED' : 'TOP 10 IN INDIA'}
+                  FEATURED VOTING
                 </span>
                 <span className="text-[10px] font-bold text-gray-200 flex items-center space-x-1">
                   <TrendingUp className={`w-3 h-3 ${isLight ? 'text-sky-400' : 'text-red-500'}`} />
@@ -80,7 +80,7 @@ export default function Home() {
 
               {/* Title with BlurText animation */}
               <h1 className="text-xl sm:text-3xl md:text-4xl font-black text-white leading-tight drop-shadow-md">
-                <BlurText text="Bigg Boss Fan Pulse" delay={40} />
+                <BlurText text="BIGBOSS Community" delay={40} />
               </h1>
 
               <p className="text-xs sm:text-sm text-gray-200 line-clamp-2 leading-relaxed drop-shadow">
@@ -205,7 +205,7 @@ export default function Home() {
                 isLight ? 'text-[#0F172A]' : 'text-white'
               }`}
             >
-              ⚡ How HousePulse Works
+              ⚡ How BIGBOSS Community Works
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -303,10 +303,10 @@ export default function Home() {
         <footer className="max-w-4xl mx-auto px-4 mt-12 pt-6 border-t border-[#D0E4F7]/40 dark:border-[#222222] text-center text-gray-500 space-y-2 text-[10px]">
           <p>Questions? Unofficial Reality TV Fan Intelligence Platform</p>
           <p className="max-w-md mx-auto leading-relaxed">
-            HousePulse is not affiliated with or endorsed by Viacom18, Banijay, Star Maa, Asianet, or JioCinema. All trademarks and celebrity images belong to their respective copyright holders.
+            BIGBOSS Community is not affiliated with or endorsed by Viacom18, Banijay, Star Maa, Asianet, or JioCinema. All trademarks and celebrity images belong to their respective copyright holders.
           </p>
           <p className="font-mono text-gray-400">
-            {isLight ? 'Amazon Prime Video Gradient Light Edition' : 'Netflix Cinema Edition'}
+            © 2026 BIGBOSS Community • Free Fan Voting
           </p>
         </footer>
       </main>

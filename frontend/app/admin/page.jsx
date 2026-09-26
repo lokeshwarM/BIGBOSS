@@ -71,7 +71,7 @@ export default function AdminPage() {
                   isLight ? 'text-[#0F172A]' : 'text-white'
                 }`}
               >
-                HousePulse Studio
+                BIGBOSS Community Studio
               </h1>
               <p className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>
                 Add Contestants & Control Live Polls

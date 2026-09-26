@@ -45,44 +45,37 @@ export default function Navbar({ deviceAccount, onOpenAccountModal }) {
           <div>
             <div className="flex items-center space-x-1.5 leading-none">
               <span
-                className={`font-black text-xl tracking-wider ${
+                className={`font-black text-lg sm:text-xl tracking-wider ${
                   isLight ? 'text-[#0F172A]' : 'text-white'
                 }`}
               >
-                HOUSE<span className={isLight ? 'text-[#00A8E1]' : 'text-[#E50914]'}>PULSE</span>
+                BIGBOSS <span className={isLight ? 'text-[#00A8E1]' : 'text-[#E50914]'}>Community</span>
               </span>
             </div>
-            <span
-              className={`text-[9px] font-bold uppercase tracking-widest block mt-0.5 ${
-                isLight ? 'text-sky-700' : 'text-gray-400'
-              }`}
-            >
-              {isLight ? 'Prime Gradient Experience' : 'Netflix Cinema Edition'}
-            </span>
           </div>
         </Link>
 
         {/* Right Action Icons: Theme Switcher + Live Badge + Admin + Profile Avatar */}
         <div className="flex items-center space-x-2 sm:space-x-3">
-          {/* Theme Toggle Button (Netflix Dark <-> Amazon Prime Light) */}
+          {/* Theme Toggle Button (Dark Theme <-> Light Theme) */}
           <button
             onClick={toggleTheme}
-            className={`p-2 rounded-xl border transition-all duration-300 flex items-center space-x-1.5 active:scale-95 ${
+            className={`px-2.5 py-1.5 rounded-xl border transition-all duration-300 flex items-center space-x-1.5 active:scale-95 ${
               isLight
                 ? 'bg-[#E3EFFF] border-[#B9DCFA] text-[#0073B1] hover:bg-[#D5E8FD] shadow-sm'
                 : 'bg-[#181818] border-[#2A2A2A] text-amber-400 hover:text-amber-300 hover:border-amber-400/50'
             }`}
-            title={`Switch to ${isLight ? 'Netflix Dark Theme' : 'Amazon Prime Video Light Gradient Theme'}`}
+            title={isLight ? 'Switch to Dark Theme' : 'Switch to Light Theme'}
           >
             {isLight ? (
               <>
-                <Moon className="w-4 h-4" />
-                <span className="text-[10px] font-extrabold hidden md:inline-block">Netflix Dark</span>
+                <Moon className="w-4 h-4 text-[#0073B1]" />
+                <span className="text-[11px] font-bold text-[#0F172A]">Dark Theme</span>
               </>
             ) : (
               <>
                 <Sun className="w-4 h-4 fill-amber-400 text-amber-400" />
-                <span className="text-[10px] font-extrabold text-gray-300 hidden md:inline-block">Prime Light</span>
+                <span className="text-[11px] font-bold text-gray-200">Light Theme</span>
               </>
             )}
           </button>

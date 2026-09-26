@@ -72,7 +72,7 @@ export default function LanguageShowPage() {
                     : 'bg-[#E50914]'
                 }`}
               >
-                {isLight ? 'PRIME REGIONAL' : 'REGIONAL ORIGINAL'}
+                REGIONAL SHOW
               </span>
               <span className="text-[10px] text-gray-300 font-bold uppercase tracking-wider font-mono">
                 {show?.language || language}

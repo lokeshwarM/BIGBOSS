@@ -9,14 +9,14 @@ export const viewport = {
 };
 
 export const metadata = {
-  title: 'BiggBossPulse — Free Bigg Boss Fan Voting & Live Community',
+  title: 'BIGBOSS Community — Free Fan Voting & Live Discussions',
   description:
     'Vote free for your favourite Bigg Boss contestant across Tamil, Hindi, Telugu, Kannada, Malayalam, Marathi & Bangla. 1 vote per day per device, live rankings and instant fan chats.',
   openGraph: {
-    title: 'BiggBossPulse — Live Bigg Boss Fan Polling & Evictions',
+    title: 'BIGBOSS Community — Live Bigg Boss Fan Polling & Evictions',
     description: 'Cast your daily fan vote for Bigg Boss Hindi, Tamil, Telugu, Kannada & more without any sign-up wall!',
-    url: 'https://housepulse.in',
-    siteName: 'BiggBossPulse',
+    url: 'https://bigboss.community',
+    siteName: 'BIGBOSS Community',
     images: [
       {
         url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',

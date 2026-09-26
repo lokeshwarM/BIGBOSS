@@ -203,16 +203,16 @@ export default function SeasonHubPage() {
         <ArchiveSection archiveWeeks={archiveWeeks} />
 
         {/* Footer Disclaimer */}
-        <footer className="text-center pt-4 pb-8 space-y-2 text-[10px] text-gray-500 border-t border-[#222222]">
+        <footer className="text-center pt-4 pb-8 space-y-2 text-[10px] text-gray-500 border-t border-[#D0E4F7]/40 dark:border-[#222222]">
           <div className="flex items-center justify-center space-x-1.5 text-gray-400">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#E50914]" />
-            <span className="font-bold text-gray-300">Independent Fan Community Poll</span>
+            <ShieldCheck className={`w-3.5 h-3.5 ${isLight ? 'text-[#0073B1]' : 'text-[#E50914]'}`} />
+            <span className={`font-bold ${isLight ? 'text-slate-700' : 'text-gray-300'}`}>Independent Fan Community Poll</span>
           </div>
           <p className="leading-relaxed px-4">
-            HousePulse is an independent fan platform. Unofficial audience sentiment poll. Votes cast here do not decide the official broadcaster eviction.
+            BIGBOSS Community is an independent fan platform. Unofficial audience sentiment poll. Votes cast here do not decide the official broadcaster eviction.
           </p>
-          <p className="font-mono text-gray-600 text-[9px]">
-            © 2026 HousePulse • 1 Vote per Day per Device
+          <p className="font-mono text-gray-400 text-[9px]">
+            © 2026 BIGBOSS Community • 1 Vote per Day per Device
           </p>
         </footer>
       </main>

@@ -21,7 +21,7 @@ export default function VotingBallot({
 
   const handleShare = (contestantName) => {
     const text = encodeURIComponent(
-      `🔥 I just voted for ${contestantName} on HousePulse! Support your favourite housemate before eviction: ${window.location.href}`
+      `🔥 I just voted for ${contestantName} on BIGBOSS Community! Support your favourite housemate before eviction: ${window.location.href}`
     );
     window.open(`https://wa.me/?text=${text}`, '_blank');
   };

@@ -354,11 +354,11 @@ export default function AdminContestantManager({ seasons = [], contestants = [],
                     : 'bg-[#121212] border-[#2A2A2A] hover:border-white/20'
                 }`}
               >
-                <div className="flex items-center space-x-2.5">
+                <div className="flex items-center space-x-3">
                   <img
                     src={c.photo_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'}
                     alt={c.name}
-                    className="w-8 h-8 rounded-lg object-cover border border-white/10"
+                    className="w-14 h-14 rounded-xl object-cover object-top border shadow-sm flex-shrink-0"
                   />
                   <div>
                     <span className={`block font-bold text-xs ${isLight ? 'text-[#0F172A]' : 'text-white'}`}>

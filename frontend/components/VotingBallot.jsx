@@ -88,16 +88,16 @@ export default function VotingBallot({
             >
               <div className="p-3.5 flex items-center space-x-3.5">
                 {/* Contestant Photo */}
-                <div className={`relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 border bg-black/40 ${isLight ? 'border-sky-100' : 'border-[#2A2A2A]'}`}>
+                <div className={`relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden flex-shrink-0 border shadow-md bg-black/40 ${isLight ? 'border-sky-100' : 'border-[#2A2A2A]'}`}>
                   <img
                     src={nominee.photo_url}
                     alt={nominee.name}
-                    className="w-full h-full object-cover object-top"
+                    className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-300"
                     loading="lazy"
                   />
                   {isVotedForThis && (
                     <div className={`absolute inset-0 flex items-center justify-center ${isLight ? 'bg-[#00A8E1]/30' : 'bg-[#E50914]/30'}`}>
-                      <CheckCircle2 className="w-6 h-6 text-white drop-shadow-md" />
+                      <CheckCircle2 className="w-7 h-7 text-white drop-shadow-md" />
                     </div>
                   )}
                 </div>

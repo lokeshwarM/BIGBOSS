@@ -11,3 +11,8 @@ var InitialSchema string
 //
 //go:embed 002_seed_data.sql
 var SeedData string
+
+// CommunityAndAuthSchema embeds the authentication, persistent posts, comments & reactions schema
+//
+//go:embed 003_community_and_auth.sql
+var CommunityAndAuthSchema string

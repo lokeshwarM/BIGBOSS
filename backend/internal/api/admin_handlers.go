@@ -9,14 +9,7 @@ import (
 	"github.com/biggboss/pulse/internal/service"
 )
 
-// ─────────────────────────────────────────────────────────
-// ADMIN AUTH MIDDLEWARE
-// ─────────────────────────────────────────────────────────
-// requireAdmin checks for the X-Admin-Key header.
-// Call this at the top of each admin handler.
-func requireAdmin(w http.ResponseWriter, r *http.Request) bool {
-	return checkAdminKey(w, r)
-}
+
 
 // ─────────────────────────────────────────────────────────
 // SEASON MANAGEMENT
@@ -221,6 +214,21 @@ func AdminPollByIDHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// /api/admin/polls/{id}/close
+	if len(parts) >= 5 && parts[4] == "close" {
+		if r.Method != http.MethodPost {
+			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+			return
+		}
+		weekID := parts[3]
+		if err := service.AdminClosePoll(weekID); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"success": true, "closed": weekID})
+		return
+	}
+
 	// /api/admin/polls/{id}  DELETE
 	if r.Method == http.MethodDelete && len(parts) >= 4 {
 		weekID := parts[3]
@@ -233,6 +241,120 @@ func AdminPollByIDHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeError(w, http.StatusNotFound, "endpoint not found")
+}
+
+// ─────────────────────────────────────────────────────────
+// COMMUNITY MODERATION HANDLERS
+// ─────────────────────────────────────────────────────────
+
+// AdminPostActionHandler handles POST /api/admin/posts/{id}/pin and DELETE /api/admin/posts/{id}
+func AdminPostActionHandler(w http.ResponseWriter, r *http.Request) {
+	if !requireAdmin(w, r) {
+		return
+	}
+
+	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	if len(parts) < 4 {
+		writeError(w, http.StatusBadRequest, "invalid post path")
+		return
+	}
+	postID := parts[3]
+
+	// /api/admin/posts/{id}/pin
+	if len(parts) >= 5 && parts[4] == "pin" {
+		if r.Method != http.MethodPost {
+			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+			return
+		}
+		var req struct {
+			IsPinned bool `json:"is_pinned"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&req)
+		if err := service.PinCommunityPost(postID, req.IsPinned); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"success": true, "post_id": postID, "is_pinned": req.IsPinned})
+		return
+	}
+
+	// DELETE /api/admin/posts/{id}
+	if r.Method == http.MethodDelete {
+		if err := service.HideCommunityPost(postID); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"success": true, "deleted_post_id": postID})
+		return
+	}
+
+	writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+}
+
+// AdminCommentActionHandler handles DELETE /api/admin/comments/{id}
+func AdminCommentActionHandler(w http.ResponseWriter, r *http.Request) {
+	if !requireAdmin(w, r) {
+		return
+	}
+	if r.Method != http.MethodDelete {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	if len(parts) < 4 {
+		writeError(w, http.StatusBadRequest, "invalid comment path")
+		return
+	}
+	commentID := parts[3]
+
+	if err := service.DeleteCommunityComment(commentID); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"success": true, "deleted_comment_id": commentID})
+}
+
+// AdminReportsHandler handles GET /api/admin/reports and POST /api/admin/reports/{id}/resolve
+func AdminReportsHandler(w http.ResponseWriter, r *http.Request) {
+	if !requireAdmin(w, r) {
+		return
+	}
+
+	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+
+	// POST /api/admin/reports/{id}/resolve
+	if len(parts) >= 5 && parts[4] == "resolve" {
+		if r.Method != http.MethodPost {
+			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+			return
+		}
+		reportID := parts[3]
+		var req struct {
+			Status string `json:"status"` // 'resolved', 'dismissed'
+		}
+		_ = json.NewDecoder(r.Body).Decode(&req)
+		if err := service.ResolveModerationReport(reportID, req.Status); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"success": true, "report_id": reportID})
+		return
+	}
+
+	// GET /api/admin/reports
+	if r.Method == http.MethodGet {
+		status := r.URL.Query().Get("status")
+		reports, err := service.GetModerationReports(status)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, reports)
+		return
+	}
+
+	writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 }
 
 // AdminGetAllDataHandler returns aggregated platform data for admin dashboard

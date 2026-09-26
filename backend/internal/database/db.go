@@ -73,6 +73,11 @@ func RunMigrations() error {
 	if _, err := DB.ExecContext(ctx, migrations.InitialSchema); err != nil {
 		return fmt.Errorf("failed to apply initial schema: %w", err)
 	}
+	if migrations.CommunityAndAuthSchema != "" {
+		if _, err := DB.ExecContext(ctx, migrations.CommunityAndAuthSchema); err != nil {
+			return fmt.Errorf("failed to apply community/auth schema: %w", err)
+		}
+	}
 	log.Println("✅ Database schema verified!")
 
 	if migrations.SeedData != "" {

@@ -141,60 +141,88 @@ export default function Home() {
 
             {/* Horizontal Scroll Poster Rail */}
             <div className="flex space-x-3 overflow-x-auto no-scrollbar pb-2 pt-1 scroll-smooth">
-              <NetflixPosterCard
-                href="/telugu/season10"
-                title="Bigg Boss Telugu"
-                subtitle="Host: Nagarjuna • Season 10"
-                imageUrl="/images/Telugu.png"
-                rank={1}
-                matchScore={99}
-                badgeText="LIVE VOTE"
-              />
-              <NetflixPosterCard
-                href="/tamil/season10"
-                title="Bigg Boss Tamil"
-                subtitle="Host: Vijay Sethupathi • Season 10"
-                imageUrl="/images/Tamil.png"
-                rank={2}
-                matchScore={97}
-                badgeText="WEEK 3"
-              />
-              <NetflixPosterCard
-                href="/hindi/season20"
-                title="Bigg Boss Hindi"
-                subtitle="Host: Salman Khan • Season 20"
-                imageUrl="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=500&q=80"
-                rank={3}
-                matchScore={96}
-                badgeText="ON AIR"
-              />
-              <NetflixPosterCard
-                href="/kannada/season13"
-                title="Bigg Boss Kannada"
-                subtitle="Host: Kichcha Sudeep • Season 13"
-                imageUrl="/images/Kannada.png"
-                rank={4}
-                matchScore={94}
-                badgeText="ON AIR"
-              />
-              <NetflixPosterCard
-                href="/malayalam/season8"
-                title="Bigg Boss Malayalam"
-                subtitle="Host: Mohanlal • Season 8"
-                imageUrl="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=500&q=80"
-                rank={5}
-                matchScore={92}
-                badgeText="ON AIR"
-              />
-              <NetflixPosterCard
-                href="/marathi/season6"
-                title="Bigg Boss Marathi"
-                subtitle="Host: Riteish Deshmukh • Season 6"
-                imageUrl="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=500&q=80"
-                rank={6}
-                matchScore={90}
-                badgeText="COMPLETED"
-              />
+              {shows.length > 0 ? (
+                shows.map((show, idx) => {
+                  const posterImg =
+                    show.slug === 'telugu'
+                      ? '/images/Telugu.png'
+                      : show.slug === 'tamil'
+                      ? '/images/Tamil.png'
+                      : show.slug === 'kannada'
+                      ? '/images/Kannada.png'
+                      : show.banner_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=500&q=80';
+
+                  return (
+                    <NetflixPosterCard
+                      key={show.id || show.slug}
+                      href={`/${show.slug}`}
+                      title={show.name}
+                      subtitle={`Host: ${show.host_name || 'Bigg Boss'} • ${show.language}`}
+                      imageUrl={posterImg}
+                      rank={idx + 1}
+                      matchScore={99 - idx * 2}
+                      badgeText={show.is_active ? 'ON AIR' : 'ARCHIVED'}
+                    />
+                  );
+                })
+              ) : (
+                <>
+                  <NetflixPosterCard
+                    href="/telugu/season10"
+                    title="Bigg Boss Telugu"
+                    subtitle="Host: Nagarjuna • Season 10"
+                    imageUrl="/images/Telugu.png"
+                    rank={1}
+                    matchScore={99}
+                    badgeText="LIVE VOTE"
+                  />
+                  <NetflixPosterCard
+                    href="/tamil/season10"
+                    title="Bigg Boss Tamil"
+                    subtitle="Host: Vijay Sethupathi • Season 10"
+                    imageUrl="/images/Tamil.png"
+                    rank={2}
+                    matchScore={97}
+                    badgeText="WEEK 3"
+                  />
+                  <NetflixPosterCard
+                    href="/hindi/season20"
+                    title="Bigg Boss Hindi"
+                    subtitle="Host: Salman Khan • Season 20"
+                    imageUrl="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=500&q=80"
+                    rank={3}
+                    matchScore={96}
+                    badgeText="ON AIR"
+                  />
+                  <NetflixPosterCard
+                    href="/kannada/season13"
+                    title="Bigg Boss Kannada"
+                    subtitle="Host: Kichcha Sudeep • Season 13"
+                    imageUrl="/images/Kannada.png"
+                    rank={4}
+                    matchScore={94}
+                    badgeText="ON AIR"
+                  />
+                  <NetflixPosterCard
+                    href="/malayalam/season8"
+                    title="Bigg Boss Malayalam"
+                    subtitle="Host: Mohanlal • Season 8"
+                    imageUrl="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=500&q=80"
+                    rank={5}
+                    matchScore={92}
+                    badgeText="ON AIR"
+                  />
+                  <NetflixPosterCard
+                    href="/marathi/season6"
+                    title="Bigg Boss Marathi"
+                    subtitle="Host: Riteish Deshmukh • Season 6"
+                    imageUrl="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=500&q=80"
+                    rank={6}
+                    matchScore={90}
+                    badgeText="COMPLETED"
+                  />
+                </>
+              )}
             </div>
           </section>
 

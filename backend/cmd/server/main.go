@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/biggboss/pulse/internal/api"
+	"github.com/biggboss/pulse/internal/auth"
 	"github.com/biggboss/pulse/internal/database"
 	"github.com/biggboss/pulse/internal/realtime"
 	"github.com/biggboss/pulse/internal/service"
@@ -124,8 +125,32 @@ func main() {
 	// ── Device ───────────────────────────────────────────────────
 	mux.HandleFunc("/api/device/register", api.RegisterDevice)
 
+	// ── Authentication ───────────────────────────────────────────
+	mux.HandleFunc("/api/auth/google", api.GoogleLoginHandler)
+	mux.HandleFunc("/api/auth/dev-login", api.DevLoginHandler)
+	mux.HandleFunc("/api/auth/me", api.GetMeHandler)
+	mux.HandleFunc("/api/auth/profile", api.UpdateProfileHandler)
+	mux.HandleFunc("/api/auth/logout", api.LogoutHandler)
+
+	// ── Persistent Social Posts, Comments & Reactions ─────────────
+	mux.HandleFunc("/api/posts", api.PostsHandler)
+	mux.HandleFunc("/api/posts/", func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/comments") {
+			api.PostCommentsHandler(w, r)
+			return
+		}
+		if strings.Contains(r.URL.Path, "/react") {
+			api.PostReactHandler(w, r)
+			return
+		}
+		api.PostsHandler(w, r)
+	})
+
+	// ── Moderation Reports ───────────────────────────────────────
+	mux.HandleFunc("/api/reports", api.ModerationReportHandler)
+
 	// ── Admin ─────────────────────────────────────────────────────
-	// All admin endpoints require X-Admin-Key header
+	// All admin endpoints require authenticated admin role OR X-Admin-Key
 	mux.HandleFunc("/api/admin/data", api.AdminGetAllDataHandler)
 	mux.HandleFunc("/api/admin/shows", api.AdminCreateShowHandler)
 	mux.HandleFunc("/api/admin/seasons", api.AdminCreateSeasonHandler)
@@ -133,11 +158,22 @@ func main() {
 	mux.HandleFunc("/api/admin/contestants/", api.AdminContestantByIDHandler)
 	mux.HandleFunc("/api/admin/polls", api.AdminPollsHandler)
 	mux.HandleFunc("/api/admin/polls/", api.AdminPollByIDHandler)
+	mux.HandleFunc("/api/admin/reports", api.AdminReportsHandler)
+	mux.HandleFunc("/api/admin/reports/", api.AdminReportsHandler)
+	mux.HandleFunc("/api/admin/posts/", api.AdminPostActionHandler)
+	mux.HandleFunc("/api/admin/comments/", api.AdminCommentActionHandler)
+	mux.HandleFunc("/api/admin/chat/", func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/pin") {
+			api.PinChatMessage(w, r)
+		} else {
+			api.DeleteChatMessage(w, r)
+		}
+	})
 
 	// ── WebSocket ─────────────────────────────────────────────────
 	mux.HandleFunc("/ws", realtime.ServeWs)
 
-	handler := corsMiddleware(mux)
+	handler := corsMiddleware(auth.AuthMiddleware(mux))
 
 	log.Printf("⚡ BIGBOSS Community Server listening on port :%s", port)
 	log.Printf("👉 REST API  → http://localhost:%s/api", port)

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Vote, Trash2, CheckCircle2, UserX } from 'lucide-react';
-import { adminCreatePoll, adminEvictContestant, adminDeletePoll } from '../../lib/api';
+import { adminCreatePoll, adminEvictContestant, adminClosePoll, adminDeletePoll } from '../../lib/api';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function AdminPollManager({ seasons, contestants, polls, onRefresh }) {
@@ -64,6 +64,17 @@ export default function AdminPollManager({ seasons, contestants, polls, onRefres
       setMessage('❌ Failed: ' + err.message);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleClosePoll = async (pollId) => {
+    if (!confirm('Are you sure you want to close this poll? Voting will stop.')) return;
+    try {
+      await adminClosePoll(pollId);
+      alert('Poll closed successfully!');
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      alert('Close poll failed: ' + err.message);
     }
   };
 
@@ -313,33 +324,46 @@ export default function AdminPollManager({ seasons, contestants, polls, onRefres
                   <span>Nominees: {poll.nominees?.map((n) => n.name).join(', ') || 'None'}</span>
                 </div>
 
-                {/* If active, allow declaring eviction */}
+                {/* If active, allow closing poll or declaring eviction */}
                 {poll.is_active && (
-                  <div className={`pt-2 border-t flex items-center space-x-2 ${isLight ? 'border-sky-100' : 'border-[#2A2A2A]'}`}>
-                    <select
-                      className={`flex-1 rounded-lg px-2 py-1 text-[11px] outline-none border transition-colors ${
-                        isLight
-                          ? 'bg-[#F8FAFD] border-[#CDE5FA] text-[#0F172A]'
-                          : 'bg-[#181818] border-[#2A2A2A] text-white'
-                      }`}
-                      onChange={(e) => {
-                        setEvictWeekId(poll.id);
-                        setEvictContestantId(e.target.value);
-                      }}
-                    >
-                      <option value="">Select Evicted Contestant...</option>
-                      {poll.nominees?.map((n) => (
-                        <option key={n.id} value={n.id}>
-                          {n.name}
-                        </option>
-                      ))}
-                    </select>
+                  <div className={`pt-2 border-t space-y-2 ${isLight ? 'border-sky-100' : 'border-[#2A2A2A]'}`}>
+                    <div className="flex items-center space-x-2">
+                      <select
+                        className={`flex-1 rounded-lg px-2 py-1 text-[11px] outline-none border transition-colors ${
+                          isLight
+                            ? 'bg-[#F8FAFD] border-[#CDE5FA] text-[#0F172A]'
+                            : 'bg-[#181818] border-[#2A2A2A] text-white'
+                        }`}
+                        onChange={(e) => {
+                          setEvictWeekId(poll.id);
+                          setEvictContestantId(e.target.value);
+                        }}
+                      >
+                        <option value="">Select Evicted Contestant...</option>
+                        {poll.nominees?.map((n) => (
+                          <option key={n.id} value={n.id}>
+                            {n.name}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={handleEvict}
+                        disabled={!evictContestantId || evictWeekId !== poll.id}
+                        className="bg-red-500 hover:bg-red-600 disabled:opacity-40 text-white font-bold px-2.5 py-1 rounded-lg text-[10px] flex items-center space-x-1"
+                      >
+                        <UserX className="w-3 h-3" />
+                        <span>Evict & Archive</span>
+                      </button>
+                    </div>
                     <button
-                      onClick={handleEvict}
-                      className="bg-red-500 hover:bg-red-600 text-white font-bold px-2.5 py-1 rounded-lg text-[10px] flex items-center space-x-1"
+                      onClick={() => handleClosePoll(poll.id)}
+                      className={`w-full py-1 rounded-lg text-[10px] font-bold border transition-colors ${
+                        isLight
+                          ? 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700'
+                          : 'bg-white/5 hover:bg-white/10 border-white/10 text-gray-300'
+                      }`}
                     >
-                      <UserX className="w-3 h-3" />
-                      <span>Evict</span>
+                      Close Poll Without Eviction
                     </button>
                   </div>
                 )}

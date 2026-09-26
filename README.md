@@ -1,116 +1,136 @@
-# BiggBossPulse (HousePulse) — Multi-Language Bigg Boss Fan Voting & Live Community
+# BIGBOSS Community — Multi-Language Bigg Boss Fan Ecosystem
 
-> **High-Performance Reality TV Fan Voting & Community Platform**  
-> Covering **Bigg Boss Hindi, Telugu, Tamil, Kannada, Malayalam, Marathi & Bangla** with real-time fan polling, Monday-to-Friday nomination cycles, past weekly archives, and frictionless anonymous device chat.
-
----
-
-## 🌟 Key Features
-
-1. **Frictionless Anonymous Fan Voting:**
-   - No forced Google OAuth or phone verification to cast a vote.
-   - 1 vote per day per device with rate-limiting and anti-tamper device tokens.
-   - Optional email linking for eviction notifications and account recovery.
-
-2. **Real-time Live Chat & Discussions:**
-   - Inline conversation room right below the voting ballot.
-   - Instant 1-click anonymous device account generation with custom fan nicknames.
-   - High-concurrency WebSockets powered by Go goroutines.
-
-3. **TV Schedule Synchronization:**
-   - Active voting opens Monday night post-nomination broadcast and locks Friday midnight.
-   - Live real-time countdown timer before eviction episode.
-   - Eviction outcome comparison: Community Fan Poll vs. Official Broadcaster result.
-
-4. **Complete Historical Archive:**
-   - Multi-week nomination history, voting percentage breakdowns, and eviction logs for all completed weeks.
-   - Rich contestant profiles with native script names, photos, occupations, and survival stats.
-
-5. **Mobile-First App-Like Experience:**
-   - Optimized for mobile users (WhatsApp & Instagram social traffic).
-   - Server-Side Rendered (SSR) Open Graph dynamic cards for rich WhatsApp previews.
+> **High-Performance Unofficial Reality TV Fan Voting & Community Platform**  
+> Covering **Bigg Boss Telugu, Tamil, Hindi, Kannada, Malayalam, Marathi & Bangla** with real-time fan polling, Monday-to-Friday nomination cycles, past weekly archives, and frictionless anonymous device participation.
 
 ---
 
-## 🏗️ Architecture & Tech Stack
+## 🌟 The 4 Interconnected Product Pillars
+
+BIGBOSS Community is an end-to-end reality show fan ecosystem designed around 4 core pillars:
+
+1. **Multi-Language Bigg Boss Discovery:**
+   - Seamless discovery across all regional editions: **Telugu, Tamil, Hindi, Kannada, Malayalam, Marathi, and Bangla**.
+   - Data-driven show and season architecture allowing unlimited regional shows and historical editions.
+   - Dynamic cinematic billboards with custom theme palettes: **Netflix-inspired Dark Theme** and **Amazon Prime Video-inspired Gradient Light Theme**.
+
+2. **Authoritative Live Fan Voting:**
+   - **Anonymous-First Voting:** Fans can immediately cast 1 daily vote per device/voter identity without any forced login or personal data collection.
+   - **Authoritative Database Enforcement:** Powered by PostgreSQL unique constraints `(week_id, device_id, vote_date)` and atomic database transactions.
+   - **Realtime Vote Broadcasts:** WebSockets stream live contestant vote percentages and community rankings instantly upon ballot submission.
+
+3. **Fan Social Participation (Ephemeral Live Chat + Persistent Opinions):**
+   - **Dual-Mode Discussion System:**
+     - **Live Room Chat (Ephemeral):** In-memory sliding window for instant, high-frequency episode reactions. Keeps server memory clean without clogging historical database records.
+     - **Community Opinions (Persistent):** Authenticated fan posts with threaded replies and 4 active reaction types: **Like (👍), Love (❤️), Agree (🤝), and Disagree (👎)**.
+   - **Strict Privacy Model:** Public DTOs expose *only* anonymous nicknames (`Fan_4821`) and avatar accent colors. Private emails, OAuth provider IDs, and internal UUIDs are strictly kept confidential and never leaked.
+
+4. **Historical Season & Eviction Archive:**
+   - Complete multi-week nomination history, final vote totals, percentage breakdowns, and official eviction records.
+   - Clear distinction between **Unofficial Fan Community Poll Standings** and **Official TV Broadcaster Results**.
+
+---
+
+## 🔒 Identity & Privacy Architecture
+
+The platform implements a strict 3-layer identity model:
+
+| Layer | Scope | Visibility | Example |
+| :--- | :--- | :--- | :--- |
+| **Internal User Identity** | Private DB Account | Backend Only | `b2f1505c-3a6d-495c-9c71-bdfcfa457106` |
+| **Authentication Identity** | Google OAuth / Email | Private User Profile Only | `fan@example.com` |
+| **Public Community Identity** | Site-wide Discussions | Public to All Fans | `Fan_4821` / Accent Color |
+
+- **Zero-Barrier Guests:** New visitors receive a persistent browser device pass with an auto-generated nickname (`Fan_XXXX`) allowing immediate voting and live chat.
+- **Guest-to-Authenticated Link:** When a user logs in via Google or account authentication, their device ID is linked via `user_device_links`. Their public nickname and voting history are retained without revealing their email or identity to other users.
+
+---
+
+## 🛠️ Admin Studio Control Center
+
+The admin panel (`/admin`) provides full lifecycle management:
+- **Show & Season Management:** Create and configure new regional shows, hosts, artwork, and seasons (`ongoing`, `upcoming`, `completed`).
+- **Contestant Management:** Add contestants with photos, native script names, bio, and status (`in_house`, `evicted`, `winner`).
+- **Weekly Nomination Polls:** Choose nominated contestants, set voting windows, launch polls, close polls, and declare eviction outcomes.
+- **Community Moderation:** Review flagged content reports, hide inappropriate posts, pin community highlights, and resolve reports.
+- **Security:** Protected by role-based JWT authentication (`role: admin`) and server-side authorization.
+
+---
+
+## 🏗️ Technical Architecture & Tech Stack
 
 ```mermaid
 graph TD
-    Client[Mobile Web App / Next.js SSR] -->|REST & WebSockets| GoAPI[Go Backend Service]
-    Client -->|Social Crawlers / Previews| NextSSR[Next.js Dynamic OG Engine]
-    GoAPI -->|Pooled Queries| NeonDB[(Neon Serverless PostgreSQL)]
-    GoAPI -->|Device Rate Limiting| RateLimiter[In-Memory / Redis Token Store]
-    GoAPI -->|Pub/Sub Live Chat| WSHub[Go WebSocket Hub]
+    Client[Next.js 14 Web App - Netflix Dark & Prime Light] -->|REST API & Auth| GoAPI[Go 1.22 Server Service]
+    Client -->|WebSockets Room Streaming| WSHub[Go WebSocket Hub]
+    GoAPI -->|Pooled Queries & DDL Migrations| NeonDB[(Neon Serverless PostgreSQL)]
+    GoAPI -->|Ephemeral Live Chat & Rate Limiting| InMemStore[Go Ephemeral Memory Store]
 ```
 
-- **Frontend:** Next.js (React 19 / App Router), Vanilla CSS / Tailwind CSS, Lucide Icons
-- **Backend:** Go (Golang) REST API + WebSockets (`gorilla/websocket`), connection pooling, graceful shutdown
-- **Database:** Neon Serverless PostgreSQL with PgBouncer connection pooling
-- **CI/CD:** GitHub Actions workflows for backend test/lint & frontend build
+- **Frontend:** Next.js 14 (App Router), Vanilla CSS / Tailwind CSS, Lucide Icons, React Bits motion effects (`AuroraGlow`, `BlurText`, `PulseGlowBadge`, `SpotlightCard`).
+- **Backend:** Go REST API + Gorilla WebSockets, JWT authentication (`HS256`), Token-Bucket Rate Limiter, and HTML-safe sanitization.
+- **Database:** Neon Serverless PostgreSQL with PgBouncer connection pooling and embedded forward migrations (`go:embed`).
 
 ---
 
-## 📂 Project Structure
-
-```
-BIGBOSS/
-├── .github/
-│   └── workflows/          # CI/CD Workflows for Go & Next.js
-├── backend/                # Go Backend Service
-│   ├── cmd/server/         # Entry point (main.go)
-│   ├── internal/
-│   │   ├── api/            # HTTP Handlers & Routes
-│   │   ├── database/       # Neon Postgres connection & migrations
-│   │   ├── models/         # Go data models (Show, Season, Week, Contestant, Vote, Chat)
-│   │   ├── realtime/       # WebSocket Hub for live chat
-│   │   └── service/        # Business logic & device vote limiting
-│   └── migrations/         # PostgreSQL DDL migrations
-├── frontend/               # Next.js Mobile-First Web Application
-│   ├── app/                # App Router pages (Home, Shows, Vote, Archive)
-│   ├── components/         # Reusable mobile UI components
-│   └── lib/                # API client, device identity helpers
-├── .env.example            # Environment configuration template
-├── .gitignore              # Multi-tier ignore rules
-└── README.md               # Project documentation
-```
-
----
-
-## 🚀 Getting Started
+## 🚀 Local Development Setup
 
 ### Prerequisites
-- Node.js 18+ & npm
+- Node.js 18+ and npm
 - Go 1.22+
-- Neon PostgreSQL account (or local Postgres)
+- Neon PostgreSQL connection string (or local PostgreSQL 13+)
 
-### Quick Setup
+### 1. Clone & Configure Environment
+```bash
+git clone https://github.com/lokeshwarM/BIGBOSS.git
+cd BIGBOSS
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/your-username/biggboss-pulse.git
-   cd biggboss-pulse
-   ```
+# Copy environment template
+cp .env.example .env
+```
+Edit `.env` with your database credentials:
+```env
+PORT=8081
+DATABASE_URL=postgresql://user:password@ep-sample.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+DEVICE_AUTH_SECRET=your_32_char_secret_key_here
+ADMIN_SECRET=your_admin_secret_key
+ADMIN_EMAILS=admin@bigboss.community
+NEXT_PUBLIC_API_URL=http://localhost:8081/api
+NEXT_PUBLIC_WS_URL=ws://localhost:8081/ws
+```
 
-2. **Configure Environment:**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your Neon DATABASE_URL
-   ```
+### 2. Run Backend (Go)
+```bash
+cd backend
+go run cmd/server/main.go
+```
+The backend automatically executes all embedded PostgreSQL migrations on startup and starts listening on port `8081`.
 
-3. **Run Backend (Go):**
-   ```bash
-   cd backend
-   go run cmd/server/main.go
-   ```
-
-4. **Run Frontend (Next.js):**
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
+### 3. Run Frontend (Next.js)
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Visit [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 🛡️ License & Legal Disclaimer
-*BiggBossPulse is an independent, non-commercial fan community platform. It is not affiliated with, endorsed by, or sponsored by Viacom18, JioCinema, Disney+ Hotstar, Endemol Shine, Banijay, or any official Bigg Boss broadcaster. All trademarks and contestant images belong to their respective owners.*
+## 🧪 Testing & Verification
+
+Run backend unit and integration tests:
+```bash
+cd backend
+go test -v ./...
+```
+Tests verify:
+- Authentication & JWT token generation / extraction
+- Ephemeral chat sliding window and persistent social post models
+- Reaction toggle and uniqueness constraints
+- Token-bucket rate limiting across endpoints
+- Role-based authorization on admin endpoints
+
+---
+
+## ⚖️ Legal Disclaimer
+*BIGBOSS Community is an independent, non-commercial fan platform. It is not affiliated with, endorsed by, or sponsored by Viacom18, JioCinema, Disney+ Hotstar, Endemol Shine, Banijay, Star Maa, or any official Bigg Boss broadcaster. All trademarks and contestant images belong to their respective copyright holders.*

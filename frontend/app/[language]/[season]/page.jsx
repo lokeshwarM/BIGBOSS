@@ -199,13 +199,15 @@ export default function SeasonHubPage() {
           </div>
         )}
 
-        {/* Inline Live Discussion / Chat Room */}
+        {/* Inline Live Discussion / Community Opinions */}
         {activePoll && (
           <LiveDiscussion
             weekId={activePoll.id}
+            seasonId={seasonData?.id}
             deviceAccount={deviceAccount}
             apiUrl={getApiBase()}
             wsUrl={getWsBase()}
+            onOpenAuthModal={() => setIsModalOpen(true)}
           />
         )}
 

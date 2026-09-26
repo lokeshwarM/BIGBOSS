@@ -6,11 +6,14 @@ import (
 	"strings"
 
 	"github.com/biggboss/pulse/internal/models"
+	"github.com/biggboss/pulse/internal/ratelimit"
 	"github.com/biggboss/pulse/internal/realtime"
+	"github.com/biggboss/pulse/internal/security"
 	"github.com/biggboss/pulse/internal/service"
 )
 
 // GetChat handles GET /api/chat/{weekId}
+// Returns live ephemeral discussion for guests and active visitors
 func GetChat(w http.ResponseWriter, r *http.Request) {
 	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 	if len(parts) < 3 {
@@ -18,15 +21,19 @@ func GetChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	weekID := parts[2]
-	messages := service.GetChatMessages(weekID)
-	if messages == nil {
-		messages = []models.ChatMessage{}
-	}
+	messages := service.GetEphemeralChatMessages(weekID)
 	writeJSON(w, http.StatusOK, messages)
 }
 
 // PostChat handles POST /api/chat/{weekId}
+// Allows immediate anonymous guest participation in the live room (ephemeral, not permanent history)
 func PostChat(w http.ResponseWriter, r *http.Request) {
+	ip := security.GetClientIP(r)
+	if !ratelimit.PostLimiter.Allow(ip) {
+		writeError(w, http.StatusTooManyRequests, "chat rate limit exceeded")
+		return
+	}
+
 	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 	if len(parts) < 3 {
 		writeError(w, http.StatusBadRequest, "invalid path")
@@ -42,48 +49,67 @@ func PostChat(w http.ResponseWriter, r *http.Request) {
 	req.WeekID = weekID
 
 	if req.DeviceID == "" {
-		writeError(w, http.StatusBadRequest, "device_id is required")
-		return
+		req.DeviceID = ip
 	}
 
-	msg, err := service.AddChatMessage(req)
+	// If authenticated user is posting to live chat, use their public nickname
+	if claims := getOptionalAuth(r); claims != nil {
+		req.Nickname = claims.PublicNickname
+		req.AvatarColor = claims.AvatarColor
+	}
+
+	msg, err := service.AddEphemeralChatMessage(req)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	// Broadcast message to clients watching this week's room
+	// Broadcast message to clients watching this week's live room
 	realtime.BroadcastToWeek(weekID, "NEW_CHAT_MESSAGE", msg)
 
 	writeJSON(w, http.StatusCreated, msg)
 }
 
-// PinChatMessage handles POST /api/admin/chat/{id}/pin
+// PinChatMessage handles POST /api/admin/chat/{weekId}/{id}/pin
 func PinChatMessage(w http.ResponseWriter, r *http.Request) {
 	if !requireAdmin(w, r) {
 		return
 	}
 	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-	if len(parts) < 4 {
-		writeError(w, http.StatusBadRequest, "invalid path")
+	if len(parts) < 5 {
+		writeError(w, http.StatusBadRequest, "path must be /api/admin/chat/{weekId}/{id}/pin")
 		return
 	}
-	messageID := parts[3]
-	// Use Exec directly from service
-	// For simplicity, just write a helper call
-	writeJSON(w, http.StatusOK, map[string]any{"success": true, "message_id": messageID})
+	weekID := parts[3]
+	messageID := parts[4]
+
+	if err := service.PinEphemeralChatMessage(weekID, messageID); err != nil {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+
+	realtime.BroadcastToWeek(weekID, "CHAT_MESSAGE_PINNED", map[string]string{"message_id": messageID})
+	writeJSON(w, http.StatusOK, map[string]any{"success": true, "pinned": messageID})
 }
 
-// DeleteChatMessage handles DELETE /api/admin/chat/{id}
+// DeleteChatMessage handles DELETE /api/admin/chat/{weekId}/{id}
 func DeleteChatMessage(w http.ResponseWriter, r *http.Request) {
 	if !requireAdmin(w, r) {
 		return
 	}
 	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-	if len(parts) < 4 {
-		writeError(w, http.StatusBadRequest, "invalid path")
+	if len(parts) < 5 {
+		writeError(w, http.StatusBadRequest, "path must be /api/admin/chat/{weekId}/{id}")
 		return
 	}
-	messageID := parts[3]
+	weekID := parts[3]
+	messageID := parts[4]
+
+	if err := service.DeleteEphemeralChatMessage(weekID, messageID); err != nil {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+
+	realtime.BroadcastToWeek(weekID, "CHAT_MESSAGE_DELETED", map[string]string{"message_id": messageID})
 	writeJSON(w, http.StatusOK, map[string]any{"success": true, "deleted": messageID})
 }

@@ -6,7 +6,9 @@ import (
 	"strings"
 
 	"github.com/biggboss/pulse/internal/models"
+	"github.com/biggboss/pulse/internal/ratelimit"
 	"github.com/biggboss/pulse/internal/realtime"
+	"github.com/biggboss/pulse/internal/security"
 	"github.com/biggboss/pulse/internal/service"
 )
 
@@ -41,6 +43,12 @@ func GetPollByID(w http.ResponseWriter, r *http.Request) {
 func CastVote(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	ip := security.GetClientIP(r)
+	if !ratelimit.VoteLimiter.Allow(ip) {
+		writeError(w, http.StatusTooManyRequests, "voting rate limit exceeded. please wait a few seconds.")
 		return
 	}
 

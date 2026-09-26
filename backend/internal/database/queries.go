@@ -1,6 +1,8 @@
 package database
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -711,4 +713,403 @@ func slugify(s string) string {
 		return fmt.Sprintf("contestant-%d", time.Now().UnixNano())
 	}
 	return string(clean)
+}
+
+// ============================================================
+// AUTHENTICATED USERS
+// ============================================================
+
+func UpsertUser(u models.User) (*models.User, error) {
+	ctx, cancel := Q()
+	defer cancel()
+
+	var out models.User
+	err := DB.QueryRowContext(ctx, `
+		INSERT INTO users (email, provider, provider_subject_id, role, public_nickname, avatar_color, last_login_at)
+		VALUES ($1, $2, $3, $4, $5, $6, NOW())
+		ON CONFLICT (provider, provider_subject_id) DO UPDATE SET
+			last_login_at = NOW(),
+			public_nickname = CASE WHEN users.public_nickname = '' THEN EXCLUDED.public_nickname ELSE users.public_nickname END
+		RETURNING id, email, provider, provider_subject_id, role, public_nickname, avatar_color, is_banned, created_at, last_login_at
+	`, u.Email, u.Provider, u.ProviderSubjectID, u.Role, u.PublicNickname, u.AvatarColor,
+	).Scan(&out.ID, &out.Email, &out.Provider, &out.ProviderSubjectID, &out.Role, &out.PublicNickname, &out.AvatarColor, &out.IsBanned, &out.CreatedAt, &out.LastLoginAt)
+	if err != nil {
+		return nil, fmt.Errorf("UpsertUser: %w", err)
+	}
+	return &out, nil
+}
+
+func GetUserByID(id string) (*models.User, error) {
+	ctx, cancel := Q()
+	defer cancel()
+
+	var out models.User
+	err := DB.QueryRowContext(ctx, `
+		SELECT id, email, provider, provider_subject_id, role, public_nickname, avatar_color, is_banned, created_at, last_login_at
+		FROM users WHERE id = $1
+	`, id).Scan(&out.ID, &out.Email, &out.Provider, &out.ProviderSubjectID, &out.Role, &out.PublicNickname, &out.AvatarColor, &out.IsBanned, &out.CreatedAt, &out.LastLoginAt)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func UpdateUserPublicProfile(id, nickname, avatarColor string) error {
+	return Exec(`UPDATE users SET public_nickname = $1, avatar_color = $2 WHERE id = $3`, nickname, avatarColor, id)
+}
+
+func LinkUserDevice(userID, deviceID string) error {
+	return Exec(`INSERT INTO user_device_links (user_id, device_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`, userID, deviceID)
+}
+
+// ============================================================
+// ============================================================
+// PERSISTENT COMMUNITY POSTS
+// ============================================================
+
+func CreateCommunityPost(p models.CommunityPost, userID string) (*models.CommunityPost, error) {
+	ctx, cancel := Q()
+	defer cancel()
+
+	if p.SeasonID == "" && p.WeekID != "" {
+		var sID string
+		_ = DB.QueryRowContext(ctx, `SELECT season_id::text FROM nomination_weeks WHERE id=$1::uuid`, p.WeekID).Scan(&sID)
+		p.SeasonID = sID
+	}
+	if p.ShowSlug == "" && p.SeasonID != "" {
+		var slug string
+		_ = DB.QueryRowContext(ctx, `SELECT sh.slug FROM seasons se JOIN shows sh ON sh.id=se.show_id WHERE se.id=$1::uuid`, p.SeasonID).Scan(&slug)
+		p.ShowSlug = slug
+	}
+	if p.AuthorNickname == "" && p.Nickname != "" {
+		p.AuthorNickname = p.Nickname
+	}
+	if p.AuthorAvatarColor == "" && p.AvatarColor != "" {
+		p.AuthorAvatarColor = p.AvatarColor
+	}
+
+	var out models.CommunityPost
+	err := DB.QueryRowContext(ctx, `
+		INSERT INTO community_posts (user_id, show_slug, season_id, week_id, author_nickname, author_avatar_color, content)
+		VALUES ($1::uuid, $2, NULLIF($3, '')::uuid, NULLIF($4, '')::uuid, $5, $6, $7)
+		RETURNING id, show_slug, COALESCE(season_id::text, ''), COALESCE(week_id::text, ''), author_nickname, author_avatar_color,
+		          content, is_pinned, likes_count, loves_count, agrees_count, disagrees_count, comments_count, created_at
+	`, userID, p.ShowSlug, p.SeasonID, p.WeekID, p.AuthorNickname, p.AuthorAvatarColor, p.Content,
+	).Scan(&out.ID, &out.ShowSlug, &out.SeasonID, &out.WeekID, &out.AuthorNickname, &out.AuthorAvatarColor,
+		&out.Content, &out.IsPinned, &out.LikesCount, &out.LovesCount, &out.AgreesCount, &out.DisagreesCount,
+		&out.CommentsCount, &out.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("CreateCommunityPost: %w", err)
+	}
+	out.Nickname = out.AuthorNickname
+	out.AvatarColor = out.AuthorAvatarColor
+	out.LikeCount = out.LikesCount
+	out.LoveCount = out.LovesCount
+	out.AgreeCount = out.AgreesCount
+	out.DisagreeCount = out.DisagreesCount
+	out.CommentCount = out.CommentsCount
+	return &out, nil
+}
+
+func GetCommunityPosts(seasonID string, weekID string, currentUserID string, limit, offset int) ([]models.CommunityPost, error) {
+	ctx, cancel := Q()
+	defer cancel()
+
+	if limit <= 0 || limit > 50 {
+		limit = 20
+	}
+
+	whereClauses := []string{"cp.is_hidden = FALSE"}
+	args := []any{}
+	argIdx := 1
+
+	selectReaction := "''"
+	leftJoin := ""
+	if currentUserID != "" {
+		selectReaction = "COALESCE(pr.reaction_type, '')"
+		leftJoin = fmt.Sprintf("LEFT JOIN post_reactions pr ON pr.post_id = cp.id AND pr.user_id = $%d::uuid", argIdx)
+		args = append(args, currentUserID)
+		argIdx++
+	}
+
+	if weekID != "" {
+		whereClauses = append(whereClauses, fmt.Sprintf("cp.week_id = $%d::uuid", argIdx))
+		args = append(args, weekID)
+		argIdx++
+	} else if seasonID != "" {
+		whereClauses = append(whereClauses, fmt.Sprintf("cp.season_id = $%d::uuid", argIdx))
+		args = append(args, seasonID)
+		argIdx++
+	}
+
+	query := fmt.Sprintf(`
+		SELECT cp.id, cp.show_slug, COALESCE(cp.season_id::text, ''), COALESCE(cp.week_id::text, ''), cp.author_nickname,
+		       cp.author_avatar_color, cp.content, cp.is_pinned, cp.likes_count, cp.loves_count,
+		       cp.agrees_count, cp.disagrees_count, cp.comments_count, cp.created_at,
+		       %s
+		FROM community_posts cp
+		%s
+		WHERE %s
+		ORDER BY cp.is_pinned DESC, cp.created_at DESC
+		LIMIT $%d OFFSET $%d
+	`, selectReaction, leftJoin, strings.Join(whereClauses, " AND "), argIdx, argIdx+1)
+
+	args = append(args, limit, offset)
+
+	rows, err := DB.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("GetCommunityPosts: %w", err)
+	}
+	defer rows.Close()
+
+	var posts []models.CommunityPost
+	for rows.Next() {
+		var p models.CommunityPost
+		if err := rows.Scan(&p.ID, &p.ShowSlug, &p.SeasonID, &p.WeekID, &p.AuthorNickname,
+			&p.AuthorAvatarColor, &p.Content, &p.IsPinned, &p.LikesCount, &p.LovesCount,
+			&p.AgreesCount, &p.DisagreesCount, &p.CommentsCount, &p.CreatedAt, &p.UserReaction); err != nil {
+			continue
+		}
+		p.Nickname = p.AuthorNickname
+		p.AvatarColor = p.AuthorAvatarColor
+		p.LikeCount = p.LikesCount
+		p.LoveCount = p.LovesCount
+		p.AgreeCount = p.AgreesCount
+		p.DisagreeCount = p.DisagreesCount
+		p.CommentCount = p.CommentsCount
+		posts = append(posts, p)
+	}
+	return posts, rows.Err()
+}
+
+func PinCommunityPost(postID string, isPinned bool) error {
+	return Exec(`UPDATE community_posts SET is_pinned = $1 WHERE id = $2`, isPinned, postID)
+}
+
+func HideCommunityPost(postID string) error {
+	return Exec(`UPDATE community_posts SET is_hidden = TRUE WHERE id = $1`, postID)
+}
+
+// ============================================================
+// COMMUNITY COMMENTS
+// ============================================================
+
+func CreateCommunityComment(postID, userID, nickname, color, content string) (*models.CommunityComment, error) {
+	ctx, cancel := Q()
+	defer cancel()
+
+	tx, err := DB.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var c models.CommunityComment
+	err = tx.QueryRowContext(ctx, `
+		INSERT INTO community_comments (post_id, user_id, author_nickname, author_avatar_color, content)
+		VALUES ($1::uuid, $2::uuid, $3, $4, $5)
+		RETURNING id, post_id, author_nickname, author_avatar_color, content, created_at
+	`, postID, userID, nickname, color, content).Scan(&c.ID, &c.PostID, &c.AuthorNickname, &c.AuthorAvatarColor, &c.Content, &c.CreatedAt)
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	_, _ = tx.ExecContext(ctx, `UPDATE community_posts SET comments_count = comments_count + 1 WHERE id = $1`, postID)
+	c.Nickname = c.AuthorNickname
+	c.AvatarColor = c.AuthorAvatarColor
+	return &c, tx.Commit()
+}
+
+func GetCommentsByPost(postID string, limit, offset int) ([]models.CommunityComment, error) {
+	ctx, cancel := Q()
+	defer cancel()
+
+	if limit <= 0 || limit > 50 {
+		limit = 25
+	}
+
+	rows, err := DB.QueryContext(ctx, `
+		SELECT id, post_id, author_nickname, author_avatar_color, content, created_at
+		FROM community_comments
+		WHERE post_id = $1::uuid AND is_hidden = FALSE
+		ORDER BY created_at ASC
+		LIMIT $2 OFFSET $3
+	`, postID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var comments []models.CommunityComment
+	for rows.Next() {
+		var c models.CommunityComment
+		if err := rows.Scan(&c.ID, &c.PostID, &c.AuthorNickname, &c.AuthorAvatarColor, &c.Content, &c.CreatedAt); err != nil {
+			continue
+		}
+		c.Nickname = c.AuthorNickname
+		c.AvatarColor = c.AuthorAvatarColor
+		comments = append(comments, c)
+	}
+	return comments, rows.Err()
+}
+
+func DeleteCommunityComment(commentID string) error {
+	return Exec(`UPDATE community_comments SET is_hidden = TRUE WHERE id = $1`, commentID)
+}
+
+// ============================================================
+// REACTIONS
+// ============================================================
+
+func TogglePostReaction(postID, userID, reactionType string) (*models.ReactionResponse, error) {
+	ctx, cancel := Q()
+	defer cancel()
+
+	tx, err := DB.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var existing string
+	err = tx.QueryRowContext(ctx, `SELECT reaction_type FROM post_reactions WHERE post_id=$1::uuid AND user_id=$2::uuid`, postID, userID).Scan(&existing)
+
+	if err == nil {
+		// User already reacted
+		if existing == reactionType || reactionType == "" {
+			// Toggle off
+			_, _ = tx.ExecContext(ctx, `DELETE FROM post_reactions WHERE post_id=$1::uuid AND user_id=$2::uuid`, postID, userID)
+			decrementReaction(ctx, tx, postID, existing)
+			existing = ""
+		} else {
+			// Switch reaction
+			_, _ = tx.ExecContext(ctx, `UPDATE post_reactions SET reaction_type=$1, created_at=NOW() WHERE post_id=$2::uuid AND user_id=$3::uuid`, reactionType, postID, userID)
+			decrementReaction(ctx, tx, postID, existing)
+			incrementReaction(ctx, tx, postID, reactionType)
+			existing = reactionType
+		}
+	} else {
+		// New reaction
+		if reactionType != "" {
+			_, err = tx.ExecContext(ctx, `INSERT INTO post_reactions (post_id, user_id, reaction_type) VALUES ($1::uuid, $2::uuid, $3)`, postID, userID, reactionType)
+			if err != nil {
+				tx.Rollback()
+				return nil, err
+			}
+			incrementReaction(ctx, tx, postID, reactionType)
+			existing = reactionType
+		}
+	}
+
+	var likes, loves, agrees, disagrees int
+	_ = tx.QueryRowContext(ctx, `SELECT likes_count, loves_count, agrees_count, disagrees_count FROM community_posts WHERE id=$1::uuid`, postID).Scan(&likes, &loves, &agrees, &disagrees)
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return &models.ReactionResponse{
+		Success:        true,
+		PostID:         postID,
+		UserReaction:   existing,
+		ActiveReaction: existing,
+		Reactions: map[string]int{
+			"like":     likes,
+			"love":     loves,
+			"agree":    agrees,
+			"disagree": disagrees,
+		},
+		LikesCount:     likes,
+		LovesCount:     loves,
+		AgreesCount:    agrees,
+		DisagreesCount: disagrees,
+	}, nil
+}
+
+func incrementReaction(ctx context.Context, tx *sql.Tx, postID, rtype string) {
+	col := reactionCol(rtype)
+	if col != "" {
+		_, _ = tx.ExecContext(ctx, fmt.Sprintf(`UPDATE community_posts SET %s = %s + 1 WHERE id=$1::uuid`, col, col), postID)
+	}
+}
+
+func decrementReaction(ctx context.Context, tx *sql.Tx, postID, rtype string) {
+	col := reactionCol(rtype)
+	if col != "" {
+		_, _ = tx.ExecContext(ctx, fmt.Sprintf(`UPDATE community_posts SET %s = GREATEST(0, %s - 1) WHERE id=$1::uuid`, col, col), postID)
+	}
+}
+
+func reactionCol(rtype string) string {
+	switch rtype {
+	case "like":
+		return "likes_count"
+	case "love":
+		return "loves_count"
+	case "agree":
+		return "agrees_count"
+	case "disagree":
+		return "disagrees_count"
+	default:
+		return ""
+	}
+}
+
+// ============================================================
+// MODERATION REPORTS
+// ============================================================
+
+func CreateModerationReport(req models.CreateReportRequest, userID, deviceID string) (*models.ModerationReport, error) {
+	ctx, cancel := Q()
+	defer cancel()
+
+	var reporterUID *string
+	if userID != "" {
+		reporterUID = &userID
+	}
+
+	var r models.ModerationReport
+	err := DB.QueryRowContext(ctx, `
+		INSERT INTO moderation_reports (target_type, target_id, reporter_user_id, reporter_device_id, reason)
+		VALUES ($1, $2::uuid, $3::uuid, $4, $5)
+		RETURNING id, target_type, target_id::text, COALESCE(reporter_device_id, 'Anonymous'), reason, status, created_at
+	`, req.TargetType, req.TargetID, reporterUID, deviceID, req.Reason).Scan(&r.ID, &r.TargetType, &r.TargetID, &r.ReporterNickname, &r.Reason, &r.Status, &r.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &r, nil
+}
+
+func GetModerationReports(status string) ([]models.ModerationReport, error) {
+	ctx, cancel := Q()
+	defer cancel()
+
+	if status == "" {
+		status = "pending"
+	}
+
+	rows, err := DB.QueryContext(ctx, `
+		SELECT id, target_type, target_id::text, COALESCE(reporter_device_id, 'Anonymous'), reason, status, created_at
+		FROM moderation_reports
+		WHERE status = $1
+		ORDER BY created_at DESC
+		LIMIT 50
+	`, status)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var list []models.ModerationReport
+	for rows.Next() {
+		var r models.ModerationReport
+		if err := rows.Scan(&r.ID, &r.TargetType, &r.TargetID, &r.ReporterNickname, &r.Reason, &r.Status, &r.CreatedAt); err != nil {
+			continue
+		}
+		list = append(list, r)
+	}
+	return list, rows.Err()
+}
+
+func ResolveModerationReport(reportID, status string) error {
+	return Exec(`UPDATE moderation_reports SET status = $1 WHERE id = $2`, status, reportID)
 }

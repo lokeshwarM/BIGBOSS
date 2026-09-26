@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -14,8 +16,20 @@ var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
-		// TODO: In production, restrict to known origins
-		return true
+		origin := r.Header.Get("Origin")
+		if origin == "" {
+			return true
+		}
+		allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
+		if allowedOrigins == "" || allowedOrigins == "*" || strings.EqualFold(os.Getenv("ENV"), "development") {
+			return true
+		}
+		for _, o := range strings.Split(allowedOrigins, ",") {
+			if strings.TrimSpace(o) == origin {
+				return true
+			}
+		}
+		return false
 	},
 }
 
@@ -132,6 +146,11 @@ func BroadcastEvent(eventType string, payload any) {
 		return
 	}
 	GlobalHub.broadcast <- BroadcastMsg{Data: data}
+}
+
+// BroadcastGlobal is an alias for BroadcastEvent
+func BroadcastGlobal(eventType string, payload any) {
+	BroadcastEvent(eventType, payload)
 }
 
 // ServeWs handles WebSocket upgrade and client registration

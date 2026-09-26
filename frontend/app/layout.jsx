@@ -1,5 +1,7 @@
 import './globals.css';
 import { ThemeProvider } from '../context/ThemeContext';
+import { AuthProvider } from '../context/AuthContext';
+import Script from 'next/script';
 
 export const viewport = {
   width: 'device-width',
@@ -33,9 +35,14 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className="dark">
+      <head>
+        <Script src="https://accounts.google.com/gsi/client" strategy="lazyOnload" />
+      </head>
       <body className="min-h-screen antialiased flex flex-col transition-colors duration-300">
         <ThemeProvider>
-          {children}
+          <AuthProvider>
+            {children}
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

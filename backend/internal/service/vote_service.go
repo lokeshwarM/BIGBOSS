@@ -27,6 +27,10 @@ type MemStore struct {
 
 var mem *MemStore
 
+func init() {
+	InitStore()
+}
+
 func InitStore() {
 	mem = &MemStore{
 		seasons:      make(map[string]*models.Season),
@@ -386,6 +390,20 @@ func AdminEvictContestant(weekID string, req models.AdminEvictContestantRequest)
 		c.IsEvicted = true
 	}
 	return w, nil
+}
+
+func AdminClosePoll(weekID string) error {
+	if database.IsConnected() {
+		return database.CloseWeek(weekID)
+	}
+	mem.mu.Lock()
+	defer mem.mu.Unlock()
+	if w, ok := mem.weeks[weekID]; ok {
+		w.IsActive = false
+		w.IsClosed = true
+		return nil
+	}
+	return errors.New("poll not found")
 }
 
 func AdminDeletePoll(weekID string) error {

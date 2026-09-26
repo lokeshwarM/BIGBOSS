@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/biggboss/pulse/internal/auth"
 )
 
 // writeJSON writes a JSON response with the given status code
@@ -19,24 +21,58 @@ func writeError(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, map[string]any{"error": msg})
 }
 
-// checkAdminKey validates X-Admin-Key header against ADMIN_SECRET env var
-func checkAdminKey(w http.ResponseWriter, r *http.Request) bool {
-	secret := os.Getenv("ADMIN_SECRET")
-	if secret == "" {
-		// In dev mode without a secret configured, allow access but warn
-		return true
+// requireAuth ensures request has a valid authenticated JWT; writes 401 if missing
+func requireAuth(w http.ResponseWriter, r *http.Request) *auth.AuthClaims {
+	claims := getOptionalAuth(r)
+	if claims == nil {
+		writeError(w, http.StatusUnauthorized, "authentication required for persistent community participation")
+		return nil
 	}
-	provided := r.Header.Get("X-Admin-Key")
-	if provided == "" {
-		// Also check Authorization: Bearer <key>
-		authHeader := r.Header.Get("Authorization")
-		if strings.HasPrefix(authHeader, "Bearer ") {
-			provided = strings.TrimPrefix(authHeader, "Bearer ")
+	return claims
+}
+
+// getOptionalAuth extracts claims from request context or token header without rejecting
+func getOptionalAuth(r *http.Request) *auth.AuthClaims {
+	if claims := auth.GetUserFromContext(r.Context()); claims != nil {
+		return claims
+	}
+	tokenStr := auth.ExtractTokenFromRequest(r)
+	if tokenStr != "" {
+		if claims, err := auth.ValidateToken(tokenStr); err == nil {
+			return claims
 		}
 	}
-	if provided != secret {
-		writeError(w, http.StatusUnauthorized, "admin authentication required")
-		return false
+	return nil
+}
+
+// requireAdmin enforces administrator authorization
+// Checks JWT role=='admin' OR valid X-Admin-Key / Bearer ADMIN_SECRET
+func requireAdmin(w http.ResponseWriter, r *http.Request) bool {
+	// 1. Check authenticated JWT role
+	if claims := getOptionalAuth(r); claims != nil {
+		if claims.Role == "admin" {
+			return true
+		}
 	}
-	return true
+
+	// 2. Check X-Admin-Key or ADMIN_SECRET Bearer header
+	secret := os.Getenv("ADMIN_SECRET")
+	if secret != "" {
+		provided := r.Header.Get("X-Admin-Key")
+		if provided == "" {
+			authHeader := r.Header.Get("Authorization")
+			if strings.HasPrefix(authHeader, "Bearer ") {
+				provided = strings.TrimPrefix(authHeader, "Bearer ")
+			}
+		}
+		if provided == secret {
+			return true
+		}
+	} else if os.Getenv("ENV") == "development" {
+		// In dev mode when no secret is explicitly configured, allow access
+		return true
+	}
+
+	writeError(w, http.StatusForbidden, "administrator authorization required")
+	return false
 }
